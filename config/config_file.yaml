@@ -2,6 +2,7 @@ seed: 12345
 PCA:
   dataset: imagenet # imagenet, cifar10, cifar100, STL10 or custom
   split: val # train, val or test
+  use_sklearn: False
   resize: 256
   crop: 224
   variance_cutoff: 0.25
