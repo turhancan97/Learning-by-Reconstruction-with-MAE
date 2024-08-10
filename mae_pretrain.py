@@ -1,5 +1,6 @@
 import math
 import os
+import time
 from argparse import ArgumentParser
 
 import torch
@@ -27,6 +28,11 @@ if __name__ == '__main__':
     ic(cfg)
 
     utils.setup_seed(cfg["seed"]) # set seed
+
+    # wandb logging
+    wandb_log = cfg["logging"]["wandb_log"]
+    wandb_project = cfg["logging"]["wandb_project"]
+    wandb_run_name = cfg["logging"]["wandb_run_name"] + time.strftime("%Y.%m.%d-%H.%M.%S")
 
     batch_size = cfg["MAE"]["batch_size"]
     load_batch_size = min(cfg["MAE"]["max_device_batch_size"], batch_size)
@@ -58,6 +64,10 @@ if __name__ == '__main__':
     lr_func = lambda epoch: min((epoch + 1) / (cfg["MAE"]["warmup_epoch"] + 1e-8), 0.5 * (math.cos(epoch / cfg["MAE"]["total_epoch"] * math.pi) + 1))
     lr_scheduler = torch.optim.lr_scheduler.LambdaLR(optim, lr_lambda=lr_func, verbose=True)
 
+    if wandb_log:
+        import wandb
+        wandb.init(project=wandb_project, name=wandb_run_name, config=cfg)
+
     step_count = 0
     optim.zero_grad()
     for e in range(cfg["MAE"]["total_epoch"]):
@@ -88,6 +98,14 @@ if __name__ == '__main__':
             img = torch.cat([val_img * (1 - mask), predicted_val_img, val_img], dim=0)
             img = rearrange(img, '(v h1 w1) c h w -> c (h1 h) (w1 v w)', w1=2, v=3)
             writer.add_image('mae_image', (img + 1) / 2, global_step=e)
+
+        if wandb_log:
+            wandb.log({
+                "epoch": e,
+                "train/loss": avg_loss,
+                # "val/loss": losses['val'],
+                "lr": optim.param_groups[0]["lr"]
+            })
         
         ''' save model '''
         torch.save(model, cfg["MAE"]["model_path"])
