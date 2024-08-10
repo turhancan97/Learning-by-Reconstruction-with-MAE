@@ -109,3 +109,8 @@ if __name__ == '__main__':
         
         ''' save model '''
         torch.save(model, cfg["MAE"]["model_path"])
+    
+    # turn off the logging
+    writer.close()
+    if wandb_log:
+        wandb.finish()
