@@ -11,3 +11,4 @@ tqdm
 omega
 pyyaml
 opencv-python
+wandb
