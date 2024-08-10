@@ -1,4 +1,8 @@
 seed: 12345
+logging:
+  wandb_log: True
+  wandb_project: "Learning_by_Reconstruction"
+  wandb_run_name: "MAE"
 PCA:
   dataset: imagenet # imagenet, cifar10, cifar100, STL10 or custom
   split: val # train, val or test
