@@ -1,0 +1,12 @@
+# python=3.8
+torch
+torchvision
+tensorboard
+scikit-learn
+matplotlib
+numpy
+einops
+timm==0.4.12
+tqdm
+omega
+pyyaml

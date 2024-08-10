@@ -1,0 +1,88 @@
+influx:
+  org: bms
+  url: https://influx-route-influx-db.apps.paas-dev.psnc.pl/ # http://localhost:8086
+  queries:
+    power:
+      bucket: PSNC_CBPIO
+      start: -1y
+      filter:
+        _measurement: 
+          - electricity_meter
+        _field:
+          - power_kw
+        direction:
+          - in
+        domain:
+          - electricity
+        interpolation_method:
+          - spline_and_value_repetition
+        location:
+          - hvac
+          - office_without_hvac
+          - datacenter
+      pivot: location
+    weather:
+      bucket: PSNC_CBPIO
+      start: -1y
+      filter:
+        _measurement: 
+          - weather
+        measurement_type:
+          - temperature.2m
+          - solarRadiation
+          - soilMoisture.-0.1m
+          - humidity
+          - pressure
+          - precipitation
+      group: all
+      pivot: measurement_type
+    prediction:
+      bucket: Py-Forecasting
+      start: -12h
+      filter:
+        _measurement: 
+          - electricity_meter
+        _field:
+          - power_kw
+      pivot: _field
+train:
+  input_len: 168 # 24 * 7
+  output_len: 24
+  batch_size: 16
+  epochs: 15
+  dropout: 0.2
+  nr_epochs_val_period: 1
+exp_name: test
+power_name: 
+  - HVAC Power
+  - Data Center Power
+  - Office Power
+energy_name:
+  - hvac_power
+  - data_center_power
+  - office_without_hvac_power
+split:
+  train: 0.80
+  val: 0.1
+  test: 0.1
+scale: True
+train_and_prediction:
+  TRAIN: False
+  PASTPRED: False
+
+seed: 12345
+PCA:
+  dataset: imagenet # imagenet, cifar10, cifar100, STL10 or custom
+  split: val # train, val or test
+  resize: 256
+  crop: 224
+  variance_cutoff: 0.25
+MAE:
+  batch_size: 4096
+  max_device_batch_size: 512
+  base_learning_rate: 1.5e-4
+  weight_decay: 0.05
+  mask_ratio: 0.75
+  total_epoch: 2
+  warmup_epoch: 200
+  model_path: vit-t-mae.pt
