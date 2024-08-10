@@ -40,6 +40,21 @@ def fast_gram_eigh(X, major="C"):
 
     return U, S
 
+def sklearn_pca(X, n_components=None):
+    """
+    Compute the PCA of a dataset using sklearn.
+    """
+    from sklearn.decomposition import PCA
+    X_np = X.numpy()
+    pca = PCA(n_components=n_components, svd_solver="auto")
+    pca.fit(X_np)
+    components = pca.components_
+    explained_variance = pca.singular_values_
+
+    explained_variance = torch.tensor(explained_variance)
+    components = torch.tensor(components).permute(1, 0)
+    return explained_variance, components
+
 
 @utils.log_step
 def main(cfg: dict) -> torch.Tensor:
@@ -79,17 +94,33 @@ def main(cfg: dict) -> torch.Tensor:
         mean_image = images.mean(0)
         # zero mean-centered (mean is subtracted from each vector).
         images -= mean_image
-        print("Flattened zero mean centered images:")
+        print("Flattened and zero mean centered images:")
         ic(images.shape)
 
-        # get spectral decomposition and normalize eigenvalues
-        eigen_values, eigen_vectors = fast_gram_eigh(images, "R")
-        eigen_values /= (
-            eigen_values.sum()
-        )  # normalize the eigenvalues (amount of variance)
-        cumulative_variance = eigen_values.cumsum(
-            dim=0
-        )  # cumulative sum of the eigenvalues
+        if cfg["PCA"]["use_sklearn"]:
+            print("Using sklearn PCA - with numpy")
+            eigen_values, eigen_vectors = sklearn_pca(images)
+            ic(eigen_values.shape, eigen_vectors.shape)
+
+            # # flip the eigen_values
+            # eigen_values = eigen_values.flip(0)
+            eigen_vectors = eigen_vectors.flip(1)
+
+            # normalize the eigenvalues (amount of variance)
+            eigen_values /= eigen_values.sum()
+            
+            # get the cumulative sum of the eigenvalues
+            cumulative_variance = eigen_values.cumsum(dim=0)
+
+        else:
+            print("Using fast PCA - with torch")
+            # get spectral decomposition and normalize eigenvalues
+            eigen_values, eigen_vectors = fast_gram_eigh(images, "R")
+            ic(eigen_values.shape, eigen_vectors.shape)
+            # normalize the eigenvalues (amount of variance)
+            eigen_values /= eigen_values.sum() 
+            # get the cumulative sum of the eigenvalues
+            cumulative_variance = eigen_values.cumsum(dim=0)
 
         # check the shapes
         assert cumulative_variance.shape[0] == len(dataset)
@@ -97,10 +128,14 @@ def main(cfg: dict) -> torch.Tensor:
         assert eigen_vectors.shape[0] == 3 * cfg["PCA"]["crop"] * cfg["PCA"]["crop"]
 
         # we get the bottom and top part (25% variance cutoff)
-        bottomk = torch.count_nonzero(
-            cumulative_variance < cfg["PCA"]["variance_cutoff"]
-        )
-        topk = torch.count_nonzero(cumulative_variance > cfg["PCA"]["variance_cutoff"])
+        if cfg["PCA"]["use_sklearn"]:
+            topk = torch.count_nonzero(cumulative_variance < cfg["PCA"]["variance_cutoff"])
+            bottomk = torch.count_nonzero(cumulative_variance > cfg["PCA"]["variance_cutoff"])
+        else:
+            bottomk = torch.count_nonzero(cumulative_variance < cfg["PCA"]["variance_cutoff"])
+            topk = torch.count_nonzero(cumulative_variance > cfg["PCA"]["variance_cutoff"])
+
+        ic(bottomk, topk)
 
         # create a folder to save the images if it does not exist
         os.makedirs("images/pca_result", exist_ok=True)
