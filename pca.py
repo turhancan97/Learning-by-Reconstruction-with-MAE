@@ -2,10 +2,10 @@ import os
 import random
 from argparse import ArgumentParser
 
-from icecream import ic
 import numpy as np
 import torch
 import tqdm
+from icecream import ic
 from torchvision import datasets
 from torchvision.transforms import v2
 
@@ -40,11 +40,13 @@ def fast_gram_eigh(X, major="C"):
 
     return U, S
 
+
 def sklearn_pca(X, n_components=None):
     """
     Compute the PCA of a dataset using sklearn.
     """
     from sklearn.decomposition import PCA
+
     # * Check here once more to understand the difference between numpy and torch implementation
     X_np = X.numpy()
     pca = PCA(n_components=n_components, svd_solver="auto")
@@ -55,6 +57,7 @@ def sklearn_pca(X, n_components=None):
     explained_variance = torch.tensor(explained_variance)
     components = torch.tensor(components).permute(1, 0)
     return explained_variance, components
+
 
 def load_and_preprocess_images(cfg: dict):
     """Load and preprocess images based on the provided configuration."""
@@ -81,7 +84,7 @@ def load_and_preprocess_images(cfg: dict):
     # Load and flatten each image
     for i, (im, y) in tqdm.tqdm(enumerate(dataset)):
         images[i] = im.flatten()
-    
+
     return images, dataset
 
 
@@ -116,7 +119,7 @@ def main(cfg: dict) -> torch.Tensor:
 
             # normalize the eigenvalues (amount of variance)
             eigen_values /= eigen_values.sum()
-            
+
             # get the cumulative sum of the eigenvalues
             cumulative_variance = eigen_values.cumsum(dim=0)
 
@@ -126,7 +129,7 @@ def main(cfg: dict) -> torch.Tensor:
             eigen_values, eigen_vectors = fast_gram_eigh(images, "R")
             ic(eigen_values.shape, eigen_vectors.shape)
             # normalize the eigenvalues (amount of variance)
-            eigen_values /= eigen_values.sum() 
+            eigen_values /= eigen_values.sum()
             # get the cumulative sum of the eigenvalues
             cumulative_variance = eigen_values.cumsum(dim=0)
 
@@ -137,13 +140,21 @@ def main(cfg: dict) -> torch.Tensor:
 
         # we get the bottom and top part (25% variance cutoff)
         if cfg["PCA"]["use_sklearn"]:
-            topk = torch.count_nonzero(cumulative_variance < cfg["PCA"]["variance_cutoff"])
-            bottomk = torch.count_nonzero(cumulative_variance > cfg["PCA"]["variance_cutoff"])
+            num_top_components = torch.count_nonzero(
+                cumulative_variance < cfg["PCA"]["variance_cutoff"]
+            )
+            num_bottom_components = torch.count_nonzero(
+                cumulative_variance > cfg["PCA"]["variance_cutoff"]
+            )
         else:
-            bottomk = torch.count_nonzero(cumulative_variance < cfg["PCA"]["variance_cutoff"])
-            topk = torch.count_nonzero(cumulative_variance > cfg["PCA"]["variance_cutoff"])
+            num_bottom_components = torch.count_nonzero(
+                cumulative_variance < cfg["PCA"]["variance_cutoff"]
+            )
+            num_top_components = torch.count_nonzero(
+                cumulative_variance > cfg["PCA"]["variance_cutoff"]
+            )
 
-        ic(bottomk, topk)
+        ic(num_bottom_components, num_top_components)
 
         # create a folder to save the images if it does not exist
         os.makedirs("images/pca_result", exist_ok=True)
@@ -161,15 +172,15 @@ def main(cfg: dict) -> torch.Tensor:
             ),
             "images/pca_result/original_images.png",
         )
-        bottom = ((images[pick]) @ eigen_vectors[:, :bottomk]) @ eigen_vectors[
-            :, :bottomk
+        bottom = ((images[pick]) @ eigen_vectors[:, :num_bottom_components]) @ eigen_vectors[
+            :, :num_bottom_components
         ].T + mean_image
         utils.plot_images(
             bottom.reshape(-1, 3, cfg["PCA"]["crop"], cfg["PCA"]["crop"]),
             "images/pca_result/bottom_pca_images.png",
         )
-        top = ((images[pick]) @ eigen_vectors[:, -topk:]) @ eigen_vectors[
-            :, -topk:
+        top = ((images[pick]) @ eigen_vectors[:, -num_top_components:]) @ eigen_vectors[
+            :, -num_top_components:
         ].T + mean_image
         utils.plot_images(
             top.reshape(-1, 3, cfg["PCA"]["crop"], cfg["PCA"]["crop"]),
@@ -183,15 +194,15 @@ def main(cfg: dict) -> torch.Tensor:
             ),
             "images/pca_result/some_random_original_images.png",
         )
-        bottom = ((images[pick]) @ eigen_vectors[:, :bottomk]) @ eigen_vectors[
-            :, :bottomk
+        bottom = ((images[pick]) @ eigen_vectors[:, :num_bottom_components]) @ eigen_vectors[
+            :, :num_bottom_components
         ].T + mean_image
         utils.plot_images(
             bottom.reshape(-1, 3, cfg["PCA"]["crop"], cfg["PCA"]["crop"]),
             "images/pca_result/some_random_bottom_pca_images.png",
         )
-        top = ((images[pick]) @ eigen_vectors[:, -topk:]) @ eigen_vectors[
-            :, -topk:
+        top = ((images[pick]) @ eigen_vectors[:, -num_top_components:]) @ eigen_vectors[
+            :, -num_top_components:
         ].T + mean_image
         utils.plot_images(
             top.reshape(-1, 3, cfg["PCA"]["crop"], cfg["PCA"]["crop"]),
