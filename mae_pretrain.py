@@ -7,7 +7,6 @@ import torch
 import torchvision
 from einops import rearrange
 from icecream import ic
-from torch.utils.tensorboard import SummaryWriter
 from torchvision.transforms import Compose, Normalize, ToTensor
 from tqdm import tqdm
 
@@ -17,18 +16,7 @@ from model import *
 # trade-off between speed and accuracy.
 torch.set_float32_matmul_precision("medium")
 
-if __name__ == '__main__':
-    # python mae_pretrain.py -c config/config_file.yaml
-    parser = ArgumentParser()
-    parser.add_argument('-c', '--config')
-    args = parser.parse_args()
-
-    print('Read Config File....')
-    cfg = utils.load_yaml(args.config)
-    ic(cfg)
-
-    utils.setup_seed(cfg["seed"]) # set seed
-
+def train(cfg):
     # wandb logging
     wandb_log = cfg["logging"]["wandb_log"]
     wandb_project = cfg["logging"]["wandb_project"]
@@ -39,11 +27,17 @@ if __name__ == '__main__':
 
     assert batch_size % load_batch_size == 0
     steps_per_update = batch_size // load_batch_size
+    
+    # Load dataset
+    dataset_name = cfg["MAE"]["dataset"]
+    root_path = f"data/{dataset_name}"
+    
+    # Common transformation
+    transform = Compose([ToTensor(), Normalize(0.5, 0.5)])
+    
+    train_dataset, val_dataset = utils.load_and_preprocess_images(root_path, dataset_name, transform)
 
-    train_dataset = torchvision.datasets.CIFAR10('data', train=True, download=True, transform=Compose([ToTensor(), Normalize(0.5, 0.5)]))
-    val_dataset = torchvision.datasets.CIFAR10('data', train=False, download=True, transform=Compose([ToTensor(), Normalize(0.5, 0.5)]))
     dataloader = torch.utils.data.DataLoader(train_dataset, load_batch_size, shuffle=True, num_workers=4)
-    writer = SummaryWriter(os.path.join('logs', 'cifar10', 'mae-pretrain'))
     device = utils.get_gpu()
 
     model = MAE_ViT(
@@ -67,6 +61,10 @@ if __name__ == '__main__':
     if wandb_log:
         import wandb
         wandb.init(project=wandb_project, name=wandb_run_name, config=cfg)
+        wandb.watch(model, log="all", log_freq=100, log_graph=True)
+    else:
+        from torch.utils.tensorboard import SummaryWriter
+        writer = SummaryWriter(os.path.join('logs', cfg["MAE"]["dataset"], 'mae-pretrain'))
 
     step_count = 0
     optim.zero_grad()
@@ -85,7 +83,6 @@ if __name__ == '__main__':
             losses.append(loss.item())
         lr_scheduler.step()
         avg_loss = sum(losses) / len(losses)
-        writer.add_scalar('mae_loss', avg_loss, global_step=e)
         print(f'In epoch {e}, average traning loss is {avg_loss}.')
 
         ''' visualize the first 16 predicted images on val dataset'''
@@ -97,20 +94,55 @@ if __name__ == '__main__':
             predicted_val_img = predicted_val_img * mask + val_img * (1 - mask)
             img = torch.cat([val_img * (1 - mask), predicted_val_img, val_img], dim=0)
             img = rearrange(img, '(v h1 w1) c h w -> c (h1 h) (w1 v w)', w1=2, v=3)
-            writer.add_image('mae_image', (img + 1) / 2, global_step=e)
 
         if wandb_log:
-            wandb.log({
-                "epoch": e,
-                "train/loss": avg_loss,
-                # "val/loss": losses['val'],
-                "lr": optim.param_groups[0]["lr"]
-            })
-        
-        ''' save model '''
-        torch.save(model, cfg["MAE"]["model_path"])
+            # Log the loss and learning rate
+            wandb.log(
+                {
+                    # "epoch": e,
+                    "train/loss": avg_loss,
+                    # "val/loss": losses['val'],
+                    "lr": optim.param_groups[0]["lr"],
+                },
+                step=e,
+            )
+            
+            # Add image to wandb to visualize
+            add_image = wandb.Image((img + 1) / 2, caption=f"Epoch:{e}")
+            wandb.log({"mae_image": add_image,},step=e)
+        else:
+            writer.add_scalar('train/loss', avg_loss, global_step=e)
+            writer.add_scalar('lr', optim.param_groups[0]["lr"], global_step=e)
+            writer.add_image('mae_image', (img + 1) / 2, global_step=e)
     
     # turn off the logging
-    writer.close()
     if wandb_log:
+        wandb.unwatch()
         wandb.finish()
+    else:
+        writer.close()
+    
+    dataset_name = cfg["MAE"]["dataset"]
+    pca_mode = cfg["MAE"]["pca_mode"]
+    model_name = cfg["MAE"]["model_name"]
+    folder_name = f"model/{dataset_name}/{pca_mode}"
+
+    # create a folder to save the model if it does not exist
+    os.makedirs(folder_name, exist_ok=True)
+    # save model
+    torch.save(model, f"{folder_name}/{model_name}")
+
+if __name__ == '__main__':
+    # python mae_pretrain.py -c config/config_file.yaml
+    parser = ArgumentParser()
+    parser.add_argument('-c', '--config')
+    args = parser.parse_args()
+
+    print('Read Config File....')
+    cfg = utils.load_yaml(args.config)
+    ic(cfg)
+
+    utils.setup_seed(cfg["seed"]) # set seed
+    print("Start Training....")
+    train(cfg)
+    print("Training Finished....")
