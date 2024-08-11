@@ -130,3 +130,48 @@ def setup_seed(seed: int = 42):
     np.random.seed(seed)
     random.seed(seed)
     torch.backends.cudnn.deterministic = True
+
+def load_and_preprocess_images(root_path: str, dataset_name: str, transform: torchvision.transforms.Compose):
+    """
+    Loads and preprocesses images from the specified dataset.
+
+    Parameters:
+        root_path (str): The root path of the dataset.
+        dataset_name (str): The name of the dataset.
+        transform (torchvision.transforms.Compose): The transformation to apply to the images.
+    Returns:
+        tuple: A tuple containing the train dataset and the validation dataset.
+    """
+    # Common parameters
+    common_params_train = {"root": root_path, "transform": transform}
+    common_params_val = {"root": root_path, "transform": transform}
+    
+    # Dataset-specific parameters
+    if dataset_name == "cifar10":
+        dataset_class = torchvision.datasets.CIFAR10
+        common_params_train.update({"download": True, "train": True})
+        common_params_val.update({"download": False, "train": False})
+    elif dataset_name == "cifar100":
+        dataset_class = torchvision.datasets.CIFAR100
+        common_params_train.update({"download": True, "train": True})
+        common_params_val.update({"download": False, "train": False})
+    elif dataset_name == "stl10":
+        dataset_class = torchvision.datasets.STL10
+        common_params_train.update({"download": True, "split": "train"})
+        common_params_val.update({"download": False, "split": "test"})
+    elif dataset_name == "imagenet":
+        dataset_class = torchvision.datasets.Imagenette
+        common_params_train.update({"download": True, "split": "train"})
+        common_params_val.update({"download": False, "split": "val"})
+    elif dataset_name == "custom":
+        dataset_class = torchvision.datasets.ImageFolder
+        common_params_train["root"] = f"data/{dataset_name}/train"
+        common_params_val["root"] = f"data/{dataset_name}/val"
+    else:
+        raise ValueError(f"Unknown dataset: {dataset_name}")
+    
+    # Create datasets
+    train_dataset = dataset_class(**common_params_train)
+    val_dataset = dataset_class(**common_params_val)
+
+    return train_dataset, val_dataset
