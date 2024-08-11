@@ -59,35 +59,6 @@ def sklearn_pca(X, n_components=None):
     return explained_variance, components
 
 
-def load_and_preprocess_images(cfg: dict):
-    """Load and preprocess images based on the provided configuration."""
-    # Transformations to apply to each image
-    transform = v2.Compose(
-        [
-            v2.PILToTensor(),
-            v2.Resize(cfg["PCA"]["resize"]),
-            v2.CenterCrop(cfg["PCA"]["crop"]),
-            v2.ToDtype(torch.float32, scale=True),
-        ]
-    )
-
-    dataset = datasets.ImageFolder(
-        f"datasets/{cfg['PCA']['dataset']}/{cfg['PCA']['split']}",
-        transform=transform,
-    )
-    print("Dataset size:")
-    ic(len(dataset))
-
-    # Initialize a tensor to store flattened images
-    images = torch.zeros(len(dataset), 3 * cfg["PCA"]["crop"] * cfg["PCA"]["crop"])
-
-    # Load and flatten each image
-    for i, (im, y) in tqdm.tqdm(enumerate(dataset)):
-        images[i] = im.flatten()
-
-    return images, dataset
-
-
 @utils.log_step
 def main(cfg: dict) -> torch.Tensor:
     """
@@ -95,8 +66,33 @@ def main(cfg: dict) -> torch.Tensor:
     - Plots the original images, the bottom PCA images and the top PCA images.
     """
     with torch.no_grad():
+        # Transformations to apply to each image
+        transform = v2.Compose(
+            [
+                v2.PILToTensor(),
+                v2.Resize(cfg["PCA"]["resize"]),
+                v2.CenterCrop(cfg["PCA"]["crop"]),
+                v2.ToDtype(torch.float32, scale=True),
+            ]
+        )
+
+        # Load dataset
+        dataset_name = cfg["PCA"]["dataset"]
+        root_path = f"data/{dataset_name}"
+
         # Load and preprocess images
-        images, dataset = load_and_preprocess_images(cfg)
+        train_dataset, val_dataset = utils.load_and_preprocess_images(root_path, dataset_name, transform)
+        
+        dataset = val_dataset if cfg["PCA"]["split"] == "val" else train_dataset
+        print("Dataset size:")
+        ic(len(dataset))
+
+        # Initialize a tensor to store flattened images
+        images = torch.zeros(len(dataset), 3 * cfg["PCA"]["crop"] * cfg["PCA"]["crop"])
+
+        # Load and flatten each image
+        for i, (im, y) in tqdm.tqdm(enumerate(dataset)):
+            images[i] = im.flatten()
 
         # # interative debugging
         # import code; code.interact(local=locals())
