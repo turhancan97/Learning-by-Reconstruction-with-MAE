@@ -1,3 +1,8 @@
+# --------------------------------------------------------
+# References:
+# MAE: https://github.com/IcarusWizard/MAE
+# --------------------------------------------------------
+
 import math
 import os
 import time
