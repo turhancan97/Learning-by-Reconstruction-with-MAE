@@ -167,3 +167,10 @@ cython_debug/
 # folders
 data/
 datasets/
+wandb/
+logs/
+model/
+
+# torch model
+*.pth
+*.pt
