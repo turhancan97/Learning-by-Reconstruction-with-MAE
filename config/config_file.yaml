@@ -1,16 +1,18 @@
 seed: 12345
 logging:
-  wandb_log: True
+  wandb_log: False
   wandb_project: "Learning_by_Reconstruction"
   wandb_run_name: "MAE"
 PCA:
-  dataset: imagenet # imagenet, cifar10, cifar100, STL10 or custom
+  dataset: imagenet # imagenet, cifar10, cifar100, stl10 or custom
   split: val # train, val or test
   use_sklearn: False
   resize: 256
   crop: 224
   variance_cutoff: 0.25
 MAE:
+  dataset: stl10 # imagenet, cifar10, cifar100, stl10 or custom
+  pca_mode: no_mode # bottom_20, bottom_25, bottom_30, bottom_35, bottom_40
   batch_size: 4096
   max_device_batch_size: 512
   base_learning_rate: 1.5e-4
@@ -18,7 +20,7 @@ MAE:
   mask_ratio: 0.75
   total_epoch: 2
   warmup_epoch: 200
-  model_path: vit-t-mae.pt
+  model_name: vit-t-mae.pt
   MODEL:
     image_size: 32
     patch_size: 2
