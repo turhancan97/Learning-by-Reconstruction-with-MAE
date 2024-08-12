@@ -21,7 +21,7 @@ def plot_images(tensor: torch.Tensor, name: str = None):
         None
     """
     plt.style.use("dark_background")
-    im = torchvision.utils.make_grid(tensor, normalize=True, scale_each=True)
+    im = torchvision.utils.make_grid(tensor, normalize=True, scale_each=True).cpu()
     nrows = max(1, len(tensor) // 8)
     plt.figure(figsize=((len(tensor) * 2) / nrows, 2 * nrows))
     plt.imshow(im.permute(1, 2, 0), aspect="auto")
