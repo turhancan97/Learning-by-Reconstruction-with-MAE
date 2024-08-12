@@ -92,7 +92,8 @@ def train(cfg):
             t1 = time.time()
             dt = t1 - t0
             t0 = t1
-            print(f"Epoch {e}, Iteration {step_count}: loss {loss.item():.4f}, time {dt*1000:.2f}ms")
+            if step_count % ((len(dataloader) // 2) + 1) == 0: # print every half epoch
+                print(f"Epoch {e}, Iteration {step_count}: Single Batch Loss {loss.item():.4f}, Time {dt*1000:.2f}ms")
         lr_scheduler.step()
         avg_loss = sum(losses) / len(losses)
         print(f'In epoch {e}, average traning loss is {avg_loss}.')
