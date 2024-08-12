@@ -12,3 +12,4 @@ omega
 pyyaml
 opencv-python
 wandb
+icecream
