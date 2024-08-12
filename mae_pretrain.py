@@ -22,10 +22,17 @@ from model import *
 torch.set_float32_matmul_precision("medium")
 
 def train(cfg):
+    # define the model, dataset and pca mode
+    dataset_name = cfg["MAE"]["dataset"]
+    pca_mode = cfg["MAE"]["pca_mode"]
+    model_name = cfg["MAE"]["model_name"]
+    run_name = '_'+ dataset_name + '_' + pca_mode + '_' + time.strftime("%Y.%m.%d-%H.%M.00")
+    folder_name = f"model/{dataset_name}/{pca_mode}"
+
     # wandb logging
     wandb_log = cfg["logging"]["wandb_log"]
     wandb_project = cfg["logging"]["wandb_project"]
-    wandb_run_name = cfg["logging"]["wandb_run_name"] + time.strftime("%Y.%m.%d-%H.%M.%S")
+    wandb_run_name = cfg["logging"]["wandb_run_name"] + run_name
 
     batch_size = cfg["MAE"]["batch_size"]
     load_batch_size = min(cfg["MAE"]["max_device_batch_size"], batch_size)
@@ -145,11 +152,6 @@ def train(cfg):
         wandb.finish()
     else:
         writer.close()
-    
-    dataset_name = cfg["MAE"]["dataset"]
-    pca_mode = cfg["MAE"]["pca_mode"]
-    model_name = cfg["MAE"]["model_name"]
-    folder_name = f"model/{dataset_name}/{pca_mode}"
 
     # create a folder to save the model if it does not exist
     os.makedirs(folder_name, exist_ok=True)
