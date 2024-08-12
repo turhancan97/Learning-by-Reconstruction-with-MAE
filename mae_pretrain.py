@@ -143,6 +143,7 @@ def train(cfg):
             wandb.log({"mae_image": add_image,},step=e)
         else:
             writer.add_scalar('train/loss', avg_loss, global_step=e)
+            writer.add_scalar('val/loss', val_loss, global_step=e)
             writer.add_scalar('lr', optim.param_groups[0]["lr"], global_step=e)
             writer.add_image('mae_image', (img + 1) / 2, global_step=e)
     
