@@ -48,7 +48,7 @@ def sklearn_pca(X, n_components=None):
     from sklearn.decomposition import PCA
 
     # * Check here once more to understand the difference between numpy and torch implementation
-    X_np = X.numpy()
+    X_np = X.cpu().numpy()
     pca = PCA(n_components=n_components, svd_solver="auto")
     pca.fit(X_np)
     components = pca.components_
@@ -96,6 +96,10 @@ def main(cfg: dict) -> torch.Tensor:
 
         # # interative debugging
         # import code; code.interact(local=locals())
+
+        # move images to device
+        images = images.to(device)
+        print("Images sent to Device")
 
         # Standardize by subtracting the mean
         mean_image = images.mean(0)
