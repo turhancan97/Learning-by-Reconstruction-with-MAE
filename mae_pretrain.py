@@ -56,7 +56,8 @@ def train(cfg):
         mask_ratio=cfg["MAE"]["mask_ratio"],
     ).to(device)
 
-    if device == torch.device("cuda"):
+    compile_ = False
+    if device == torch.device("cuda") and compile_:
         model = torch.compile(model) # * for faster training
     
     optim = torch.optim.AdamW(model.parameters(), lr=cfg["MAE"]["base_learning_rate"] * cfg["MAE"]["batch_size"] / 256, betas=(0.9, 0.95), weight_decay=cfg["MAE"]["weight_decay"])
@@ -73,6 +74,7 @@ def train(cfg):
 
     step_count = 0
     optim.zero_grad()
+    t0 = time.time()
     for e in range(cfg["MAE"]["total_epoch"]):
         model.train()
         losses = []
@@ -86,6 +88,11 @@ def train(cfg):
                 optim.step()
                 optim.zero_grad()
             losses.append(loss.item())
+            # timing and logging
+            t1 = time.time()
+            dt = t1 - t0
+            t0 = t1
+            print(f"Epoch {e}, Iteration {step_count}: loss {loss.item():.4f}, time {dt*1000:.2f}ms")
         lr_scheduler.step()
         avg_loss = sum(losses) / len(losses)
         print(f'In epoch {e}, average traning loss is {avg_loss}.')
