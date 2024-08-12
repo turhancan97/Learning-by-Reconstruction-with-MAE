@@ -43,6 +43,7 @@ def train(cfg):
     train_dataset, val_dataset = utils.load_and_preprocess_images(root_path, dataset_name, transform)
 
     dataloader = torch.utils.data.DataLoader(train_dataset, load_batch_size, shuffle=True, num_workers=4)
+    val_dataloader = torch.utils.data.DataLoader(val_dataset, load_batch_size, shuffle=False, num_workers=4)
     device = utils.get_gpu()
 
     model = MAE_ViT(
@@ -98,7 +99,8 @@ def train(cfg):
         avg_loss = sum(losses) / len(losses)
         print(f'In epoch {e}, average traning loss is {avg_loss}.')
 
-        ''' visualize the first 16 predicted images on val dataset'''
+        # ''' visualize the first 16 predicted images on val dataset'''
+        # Also, track the validation loss
         model.eval()
         with torch.no_grad():
             val_img = torch.stack([val_dataset[i][0] for i in range(16)])
@@ -107,6 +109,15 @@ def train(cfg):
             predicted_val_img = predicted_val_img * mask + val_img * (1 - mask)
             img = torch.cat([val_img * (1 - mask), predicted_val_img, val_img], dim=0)
             img = rearrange(img, '(v h1 w1) c h w -> c (h1 h) (w1 v w)', w1=2, v=3)
+            # validation loss of whole val_dataloader
+            val_loss = 0
+            for val_img, label in iter(val_dataloader):
+                val_img = val_img.to(device)
+                predicted_val_img, mask = model(val_img)
+                loss = torch.mean((predicted_val_img - val_img) ** 2 * mask) / cfg["MAE"]["mask_ratio"]
+                val_loss += loss.item()
+            val_loss /= len(val_dataloader)
+            print(f'In epoch {e}, average validation loss is {val_loss}.')
 
         if wandb_log:
             # Log the loss and learning rate
@@ -114,7 +125,7 @@ def train(cfg):
                 {
                     # "epoch": e,
                     "train/loss": avg_loss,
-                    # "val/loss": losses['val'],
+                    "val/loss": val_loss,
                     "lr": optim.param_groups[0]["lr"],
                 },
                 step=e,
