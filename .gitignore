@@ -174,3 +174,6 @@ model/
 # torch model
 *.pth
 *.pt
+
+# shell script
+*.sh
