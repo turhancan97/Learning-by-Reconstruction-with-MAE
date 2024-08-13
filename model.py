@@ -164,9 +164,30 @@ class ViT_Classifier(torch.nn.Module):
         patches = torch.cat([self.cls_token.expand(-1, patches.shape[1], -1), patches], dim=0)
         patches = rearrange(patches, 't b c -> b t c')
         features = self.layer_norm(self.transformer(patches))
+        # t is the number of patches, b is the batch size, c is the number of features
         features = rearrange(features, 'b t c -> t b c')
-        logits = self.head(features[0])
+        logits = self.head(features[0]) # only use the cls token
         return logits
+
+class ViT_FeatureExtractor(torch.nn.Module):
+    def __init__(self, encoder : MAE_Encoder, num_classes=10) -> None:
+        super().__init__()
+        self.cls_token = encoder.cls_token
+        self.pos_embedding = encoder.pos_embedding
+        self.patchify = encoder.patchify
+        self.transformer = encoder.transformer
+        self.layer_norm = encoder.layer_norm
+
+    def forward(self, img):
+        patches = self.patchify(img)
+        patches = rearrange(patches, 'b c h w -> (h w) b c')
+        patches = patches + self.pos_embedding
+        patches = torch.cat([self.cls_token.expand(-1, patches.shape[1], -1), patches], dim=0)
+        patches = rearrange(patches, 't b c -> b t c')
+        features = self.layer_norm(self.transformer(patches))
+        # t is the number of patches, b is the batch size, c is the number of features
+        features = rearrange(features, 'b t c -> t b c')
+        return features
 
 
 if __name__ == '__main__':
