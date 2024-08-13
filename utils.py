@@ -7,6 +7,8 @@ import numpy as np
 import torch
 import torchvision
 import yaml
+from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
 
 
 def plot_images(tensor: torch.Tensor, name: str = None):
@@ -175,3 +177,56 @@ def load_and_preprocess_images(root_path: str, dataset_name: str, transform: tor
     val_dataset = dataset_class(**common_params_val)
 
     return train_dataset, val_dataset
+
+def visualize_features(features: torch.Tensor, labels: torch.Tensor, 
+                       class_names: list, tsne_save_config: tuple, 
+                       n_components_tsne: int = 2, pca_components: int = None):
+    """
+    Visualizes features using t-SNE dimensionality reduction technique.
+
+    Parameters:
+        features (torch.Tensor): Input features.
+        labels (torch.Tensor): Labels corresponding to the features.
+        class_names (list): List of class names.
+        tsne_save_config (tuple): Configuration for saving t-SNE visualization.
+            Should contain folder name, dataset name, and PCA mode.
+        n_components_tsne (int, optional): Number of components for t-SNE. Defaults to 2.
+        pca_components (int, optional): Number of components for PCA preprocessing. Defaults to 50.
+    Returns:
+        None
+    """
+
+    # Get the folder name, dataset name, and PCA mode from the config
+    folder_name, dataset_name, pca_mode = tsne_save_config
+
+    # Convert features and labels to numpy arrays
+    features = features.cpu().numpy()
+    labels = labels.cpu().numpy()
+
+    # Optional PCA preprocessing
+    if pca_components is not None:
+        '''
+        It is highly recommended to use another dimensionality reduction method 
+        (e.g. PCA for dense data or TruncatedSVD for sparse data) to reduce the number 
+        of dimensions to a reasonable amount (e.g. 50) if the number of features is very high.
+        (Taken from t-SNE sklean documentation)
+        '''
+        pca = PCA(n_components=pca_components)
+        features = pca.fit_transform(features)
+
+    # Perform t-SNE
+    tsne = TSNE(n_components=n_components_tsne, random_state=0)
+    tsne_result = tsne.fit_transform(features)
+    
+    # Plot the t-SNE visualization
+    plt.figure(figsize=(10, 10))
+    scatter = plt.scatter(tsne_result[:, 0], tsne_result[:, 1], c=labels, cmap='tab10', alpha=0.6)
+
+    # Create a legend with class names
+    legend_elements = scatter.legend_elements()[0]
+    class_labels = [class_names[int(label)] for label in set(labels)]
+    plt.legend(handles=legend_elements, labels=class_labels)
+
+    plt.title("t-SNE visualization of features")
+    plt.savefig(f"{folder_name}/tsne_visualize_dataset_{dataset_name}_with_pca_{pca_mode}.png")
+    plt.show()
