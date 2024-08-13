@@ -169,7 +169,7 @@ class ViT_Classifier(torch.nn.Module):
         logits = self.head(features[0]) # only use the cls token
         return logits
 
-class ViT_FeatureExtractor(torch.nn.Module):
+class MAE_Encoder_FeatureExtractor(torch.nn.Module):
     def __init__(self, encoder : MAE_Encoder, num_classes=10) -> None:
         super().__init__()
         self.cls_token = encoder.cls_token
