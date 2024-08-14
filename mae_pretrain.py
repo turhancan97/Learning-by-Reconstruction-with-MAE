@@ -16,7 +16,7 @@ from torchvision.transforms import Compose, Normalize, ToTensor
 from tqdm import tqdm
 
 import utils
-from model import *
+from model import MAE_ViT
 
 # trade-off between speed and accuracy.
 torch.set_float32_matmul_precision("medium")
@@ -32,7 +32,7 @@ def train(cfg):
     # wandb logging
     wandb_log = cfg["logging"]["wandb_log"]
     wandb_project = cfg["logging"]["wandb_project"]
-    wandb_run_name = cfg["logging"]["wandb_run_name"] + run_name
+    wandb_run_name = cfg["logging"]["wandb_run_name"] + '_' + 'pretraining' + run_name
 
     batch_size = cfg["MAE"]["batch_size"]
     load_batch_size = min(cfg["MAE"]["max_device_batch_size"], batch_size)
