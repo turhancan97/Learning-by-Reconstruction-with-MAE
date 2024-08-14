@@ -190,16 +190,16 @@ def finetune(cfg):
             wandb.log(
                 {
                     # "epoch": e,
-                    "FINETUNE/train/loss": avg_train_loss,
-                    "FINETUNE/val/loss": avg_val_loss,
-                    "FINETUNE/train/acc": avg_train_acc,
-                    "FINETUNE/val/acc": avg_val_acc,
-                    "FINETUNE/lr": optim.param_groups[0]["lr"],
+                    "train/loss": avg_train_loss,
+                    "val/loss": avg_val_loss,
+                    "train/acc": avg_train_acc,
+                    "val/acc": avg_val_acc,
+                    "lr": optim.param_groups[0]["lr"],
                 },
                 step=e,
             )
             # W&B: Log predictions table to wandb
-            wandb.log({"FINETUNE/val_predictions": test_table})
+            wandb.log({"val_predictions": test_table})
         else:
             writer.add_scalars('FINETUNE/loss', {'train' : avg_train_loss, 'val' : avg_val_loss}, global_step=e)
             writer.add_scalars('FINETUNE/acc', {'train' : avg_train_acc, 'val' : avg_val_acc}, global_step=e)
