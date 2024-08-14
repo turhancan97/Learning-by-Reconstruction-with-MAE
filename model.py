@@ -148,6 +148,12 @@ class MAE_ViT(torch.nn.Module):
         return predicted_img, mask
 
 class ViT_Classifier(torch.nn.Module):
+    '''
+    A simple image classification task acts as a head for ViT, allowing fine-tuning on downstream tasks. 
+    We didn't directly use the MAE_ViT encoder because we need to add a classification head. 
+    The Masked Autoencoder uses only some patches as input, which means it lacks the global information of the image, 
+    making it unsuitable for classification.
+    '''
     def __init__(self, encoder : MAE_Encoder, num_classes=10) -> None:
         super().__init__()
         self.cls_token = encoder.cls_token
@@ -170,7 +176,10 @@ class ViT_Classifier(torch.nn.Module):
         return logits
 
 class MAE_Encoder_FeatureExtractor(torch.nn.Module):
-    def __init__(self, encoder : MAE_Encoder, num_classes=10) -> None:
+    '''
+    A feature extractor that extracts features from the encoder of the Masked Autoencoder.
+    '''
+    def __init__(self, encoder : MAE_Encoder) -> None:
         super().__init__()
         self.cls_token = encoder.cls_token
         self.pos_embedding = encoder.pos_embedding
