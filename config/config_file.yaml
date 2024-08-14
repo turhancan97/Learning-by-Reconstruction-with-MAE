@@ -20,7 +20,7 @@ MAE:
   mask_ratio: 0.75
   total_epoch: 400
   warmup_epoch: 40
-  model_name: vit-t-mae.pt
+  model_name: vit-t-mae-pretrain.pt
   MODEL:
     image_size: 32
     patch_size: 2
@@ -36,4 +36,4 @@ FINETUNE:
   weight_decay: 0.05
   total_epoch: 100
   warmup_epoch: 5
-  output_model_path: vit-t-finetune.pt
+  output_model_path: vit-t-mae-finetune.pt
