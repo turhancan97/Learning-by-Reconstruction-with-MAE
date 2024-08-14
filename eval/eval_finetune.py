@@ -19,11 +19,12 @@ from icecream import ic
 from model import MAE_ViT, ViT_Classifier
 from torchvision.transforms import Compose, Normalize, ToTensor
 from tqdm import tqdm
+import numpy as np
 
 # trade-off between speed and accuracy.
 torch.set_float32_matmul_precision("medium")
 
-def log_val_predictions(images, labels, outputs, predicted, test_table, log_counter, num_images: int = 4):
+def log_val_predictions(images, dataset_classes, labels, outputs, predicted, test_table, log_counter, num_images: int = 16):
   '''Log the predictions of the model on the validation dataset'''
   import wandb
   # obtain confidence scores for all classes
@@ -32,13 +33,19 @@ def log_val_predictions(images, labels, outputs, predicted, test_table, log_coun
   log_images = images.cpu().numpy()
   log_labels = labels.cpu().numpy()
   log_preds = predicted.cpu().numpy()
+
+  # convert log_labels to class names
+  log_labels = np.array([dataset_classes[i] for i in log_labels])
+  # convert log_preds to class names
+  log_preds = np.array([dataset_classes[i] for i in log_preds])
+
   # adding ids based on the order of the images
   _id = 0
   for i, l, p, s in zip(log_images, log_labels, log_preds, log_scores):
     # add required info to data table:
     # id, image pixels, model's guess, true label, scores for all classes
     img_id = str(_id) + "_" + str(log_counter)
-    test_table.add_data(img_id, wandb.Image(i), p, l, *s)
+    test_table.add_data(img_id, wandb.Image(i.transpose(1, 2, 0)), p, l, *s)
     _id += 1
     if _id == num_images:
       break
@@ -115,13 +122,14 @@ def finetune(cfg):
     if wandb_log:
         import wandb
         wandb.init(project=wandb_project, name=wandb_run_name, config=cfg)
-        wandb.watch(model, log="all", log_freq=25, log_graph=True)
+        # wandb.watch(model, log="all", log_freq=25, log_graph=True)
     else:
         from torch.utils.tensorboard import SummaryWriter
         writer = SummaryWriter(os.path.join('../logs', cfg["MAE"]["dataset"], 'finetune-cls'))
 
     best_val_acc = 0
     step_count = 0
+    dataset_classes = val_dataset.classes
     optim.zero_grad()
     for e in range(cfg["FINETUNE"]["total_epoch"]):
         model.train()
@@ -149,14 +157,14 @@ def finetune(cfg):
         if wandb_log:
             columns = ["id", "image", "predicted", "ground_truth"]
             for digit in range(len(train_dataset.classes)):
-                columns.append(f"score_{digit}")
+                columns.append(f"score_{dataset_classes[digit]}")
             test_table = wandb.Table(columns=columns)
         model.eval()
         log_counter = 0
         with torch.no_grad():
             losses = []
             acces = []
-            for img, label in tqdm(iter(val_dataloader)):
+            for img, label in iter(val_dataloader):
                 img = img.to(device)
                 label = label.to(device)
                 logits = model(img)
@@ -165,8 +173,8 @@ def finetune(cfg):
                 acc = acc_fn(logits, label)
                 losses.append(loss.item())
                 acces.append(acc.item())
-                if wandb_log and (log_counter < 1):
-                    log_val_predictions(img, label, logits, predicted, test_table, log_counter)
+                if wandb_log and (log_counter < 4):
+                    log_val_predictions(img, dataset_classes, label, logits, predicted, test_table, log_counter)
                     log_counter += 1
             avg_val_loss = sum(losses) / len(losses)
             avg_val_acc = sum(acces) / len(acces)
@@ -200,7 +208,7 @@ def finetune(cfg):
         
     # turn off the logging
     if wandb_log:
-        wandb.unwatch()
+        # wandb.unwatch()
         wandb.finish()
     else:
         writer.close()
