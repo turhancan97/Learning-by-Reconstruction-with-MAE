@@ -112,7 +112,7 @@ def finetune(cfg):
     if device == torch.device("cuda") and compile_:
         model = torch.compile(model) # * for faster training
 
-    loss_fn = torch.nn.CrossEntropyLoss()
+    loss_fn = torch.nn.CrossEntropyLoss(label_smoothing=cfg["FINETUNE"]["label_smoothing"])
     acc_fn = lambda logit, label: torch.mean((logit.argmax(dim=-1) == label).float())
 
     optim = torch.optim.AdamW(model.parameters(), lr=cfg["FINETUNE"]["base_learning_rate"] * cfg["FINETUNE"]["batch_size"] / 256, betas=(0.9, 0.999), weight_decay=cfg["FINETUNE"]["weight_decay"])
