@@ -33,7 +33,7 @@ FINETUNE:
   batch_size: 128
   max_device_batch_size: 256
   base_learning_rate: 1.0e-3
-  weight_decay: 0.1
+  weight_decay: 0.05
   label_smoothing: 0.1
   total_epoch: 100
   warmup_epoch: 5
