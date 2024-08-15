@@ -12,7 +12,7 @@ import torch
 import torchvision
 from einops import rearrange
 from icecream import ic
-from torchvision.transforms import Compose, Normalize, ToTensor
+from torchvision.transforms import v2
 from tqdm import tqdm
 
 import utils
@@ -45,7 +45,12 @@ def train(cfg):
     root_path = f"data/{dataset_name}"
     
     # Common transformation
-    transform = Compose([ToTensor(), Normalize(0.5, 0.5)])
+    transform = v2.Compose([
+        v2.Resize((cfg["MAE"]["MODEL"]["image_size"], cfg["MAE"]["MODEL"]["image_size"])),
+        v2.ToTensor(), 
+        # v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]), # typically from ImageNet
+        v2.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+    ])
     
     train_dataset, val_dataset = utils.load_and_preprocess_images(root_path, dataset_name, transform)
 
