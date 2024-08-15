@@ -161,6 +161,7 @@ class ViT_Classifier(torch.nn.Module):
         self.patchify = encoder.patchify
         self.transformer = encoder.transformer
         self.layer_norm = encoder.layer_norm
+        self.dropout = torch.nn.Dropout(0.1)  # Add dropout layer
         self.head = torch.nn.Linear(self.pos_embedding.shape[-1], num_classes)
 
     def forward(self, img):
@@ -172,6 +173,7 @@ class ViT_Classifier(torch.nn.Module):
         features = self.layer_norm(self.transformer(patches))
         # t is the number of patches, b is the batch size, c is the number of features
         features = rearrange(features, 'b t c -> t b c')
+        features = self.dropout(features)  # Apply dropout before the final head
         logits = self.head(features[0]) # only use the cls token
         return logits
 
