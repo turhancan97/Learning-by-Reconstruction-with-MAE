@@ -133,7 +133,7 @@ def setup_seed(seed: int = 42):
     random.seed(seed)
     torch.backends.cudnn.deterministic = True
 
-def load_and_preprocess_images(root_path: str, dataset_name: str, transform: torchvision.transforms.Compose):
+def load_and_preprocess_images(root_path: str, dataset_name: str, transform_train: torchvision.transforms.Compose, transform_val: torchvision.transforms.Compose):
     """
     Loads and preprocesses images from the specified dataset.
 
@@ -145,8 +145,8 @@ def load_and_preprocess_images(root_path: str, dataset_name: str, transform: tor
         tuple: A tuple containing the train dataset and the validation dataset.
     """
     # Common parameters
-    common_params_train = {"root": root_path, "transform": transform}
-    common_params_val = {"root": root_path, "transform": transform}
+    common_params_train = {"root": root_path, "transform": transform_train}
+    common_params_val = {"root": root_path, "transform": transform_val}
     
     # Dataset-specific parameters
     if dataset_name == "cifar10":

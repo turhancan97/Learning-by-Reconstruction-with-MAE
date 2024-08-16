@@ -52,7 +52,7 @@ def train(cfg):
         v2.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
     ])
     
-    train_dataset, val_dataset = utils.load_and_preprocess_images(root_path, dataset_name, transform)
+    train_dataset, val_dataset = utils.load_and_preprocess_images(root_path, dataset_name, transform, transform)
 
     dataloader = torch.utils.data.DataLoader(train_dataset, load_batch_size, shuffle=True, num_workers=4)
     val_dataloader = torch.utils.data.DataLoader(val_dataset, load_batch_size, shuffle=False, num_workers=4)

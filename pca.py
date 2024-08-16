@@ -81,7 +81,7 @@ def main(cfg: dict) -> torch.Tensor:
         root_path = f"data/{dataset_name}"
 
         # Load and preprocess images
-        train_dataset, val_dataset = utils.load_and_preprocess_images(root_path, dataset_name, transform)
+        train_dataset, val_dataset = utils.load_and_preprocess_images(root_path, dataset_name, transform, transform)
         
         dataset = val_dataset if cfg["PCA"]["split"] == "val" else train_dataset
         print("Dataset size:")
