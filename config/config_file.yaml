@@ -38,3 +38,11 @@ FINETUNE:
   total_epoch: 100
   warmup_epoch: 5
   output_model_path: vit-t-mae-finetune.pt
+LINPROBE:
+  batch_size: 256
+  max_device_batch_size: 256
+  base_learning_rate: 0.1
+  weight_decay: 0
+  total_epoch: 90
+  warmup_epoch: 10
+  output_model_path: vit-t-mae-linprobe.pt
