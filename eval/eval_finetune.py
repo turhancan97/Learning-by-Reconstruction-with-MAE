@@ -76,7 +76,7 @@ def finetune(cfg):
     # Common transformation
     transform = v2.Compose([
         v2.Resize((cfg["MAE"]["MODEL"]["image_size"], cfg["MAE"]["MODEL"]["image_size"])),
-        v2.RandAugment(),
+        v2.RandAugment(2, 9),  # 2 operations with magnitude 9
         v2.ToTensor(),
         # v2.RandomRotation(30),
         v2.ToDtype(torch.float32, scale=True),  # Normalize expects float input
@@ -93,7 +93,8 @@ def finetune(cfg):
     device = utils.get_gpu()
 
     # Load model
-    if os.path.exists(folder_name):
+    pretrain = True
+    if os.path.exists(folder_name) and pretrain:
         # Search for .pt or .pth files in the folder
         model_files = glob.glob(os.path.join(folder_name, '*.pt')) + glob.glob(os.path.join(folder_name, '*.pth'))
         print(f"Model files found: {model_files}")
@@ -122,7 +123,7 @@ def finetune(cfg):
     if device == torch.device("cuda") and compile_:
         model = torch.compile(model) # * for faster training
 
-    loss_fn = torch.nn.CrossEntropyLoss(label_smoothing=cfg["FINETUNE"]["label_smoothing"])
+    loss_fn = torch.nn.CrossEntropyLoss(label_smoothing=cfg["FINETUNE"]["label_smoothing"]) # TODO: why label smoothing is good for overfitting?
     acc_fn = lambda logit, label: torch.mean((logit.argmax(dim=-1) == label).float())
 
     optim = torch.optim.AdamW(model.parameters(), lr=cfg["FINETUNE"]["base_learning_rate"] * cfg["FINETUNE"]["batch_size"] / 256, betas=(0.9, 0.999), weight_decay=cfg["FINETUNE"]["weight_decay"])
