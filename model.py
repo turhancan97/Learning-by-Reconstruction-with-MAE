@@ -154,14 +154,15 @@ class ViT_Classifier(torch.nn.Module):
     The Masked Autoencoder uses only some patches as input, which means it lacks the global information of the image, 
     making it unsuitable for classification.
     '''
-    def __init__(self, encoder : MAE_Encoder, num_classes=10) -> None:
+    def __init__(self, encoder : MAE_Encoder, dropout_p, num_classes=10) -> None:
         super().__init__()
+        self.dropout_p = dropout_p
         self.cls_token = encoder.cls_token
         self.pos_embedding = encoder.pos_embedding
         self.patchify = encoder.patchify
         self.transformer = encoder.transformer
         self.layer_norm = encoder.layer_norm
-        self.dropout = torch.nn.Dropout(0.1)  # Add dropout layer
+        self.dropout = torch.nn.Dropout(dropout_p)  # Add dropout layer
         self.head = torch.nn.Linear(self.pos_embedding.shape[-1], num_classes)
 
     def forward(self, img):
@@ -173,7 +174,8 @@ class ViT_Classifier(torch.nn.Module):
         features = self.layer_norm(self.transformer(patches))
         # t is the number of patches, b is the batch size, c is the number of features
         features = rearrange(features, 'b t c -> t b c')
-        features = self.dropout(features)  # Apply dropout before the final head
+        if self.dropout_p > 0:
+            features = self.dropout(features)  # Apply dropout before the final head
         logits = self.head(features[0]) # only use the cls token
         return logits
 
