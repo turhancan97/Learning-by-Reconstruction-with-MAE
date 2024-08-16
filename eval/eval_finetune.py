@@ -74,7 +74,7 @@ def finetune(cfg):
     root_path = f"../data/{dataset_name}"
     
     # Common transformation
-    transform = v2.Compose([
+    transform_train = v2.Compose([
         v2.Resize((cfg["MAE"]["MODEL"]["image_size"], cfg["MAE"]["MODEL"]["image_size"])),
         v2.RandAugment(2, 9),  # 2 operations with magnitude 9
         v2.ToTensor(),
@@ -85,8 +85,16 @@ def finetune(cfg):
         # v2.RandomHorizontalFlip(),
         # v2.ColorJitter()
     ])
+
+    transform_val = v2.Compose([
+        v2.Resize((cfg["MAE"]["MODEL"]["image_size"], cfg["MAE"]["MODEL"]["image_size"])),
+        v2.ToTensor(),
+        v2.ToDtype(torch.float32, scale=True),
+        v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]), # typically from ImageNet
+        # v2.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+    ])
     
-    train_dataset, val_dataset = utils.load_and_preprocess_images(root_path, dataset_name, transform)
+    train_dataset, val_dataset = utils.load_and_preprocess_images(root_path, dataset_name, transform_train, transform_val)
 
     train_dataloader = torch.utils.data.DataLoader(train_dataset, load_batch_size, shuffle=True, num_workers=4)
     val_dataloader = torch.utils.data.DataLoader(val_dataset, load_batch_size, shuffle=False, num_workers=4)
@@ -117,7 +125,7 @@ def finetune(cfg):
         )
         print("Randomly initialized model loaded")
     
-    model = ViT_Classifier(model.encoder, num_classes=len(train_dataset.classes)).to(device)
+    model = ViT_Classifier(model.encoder, dropout_p = 0.1, num_classes=len(train_dataset.classes)).to(device)
 
     compile_ = False
     if device == torch.device("cuda") and compile_:
