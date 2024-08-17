@@ -230,3 +230,44 @@ def visualize_features(features: torch.Tensor, labels: torch.Tensor,
     plt.title("t-SNE visualization of features")
     plt.savefig(f"{folder_name}/tsne_visualize_dataset_{dataset_name}_with_pca_{pca_mode}.png")
     plt.show()
+
+def extract_variance_components():
+    # merge the train and val dataset
+    dataset = train_dataset + val_dataset
+
+    # Initialize a tensor to store flattened images
+    images = torch.zeros(len(dataset), 3 * cfg["MAE"]["MODEL"]["image_size"] * cfg["MAE"]["MODEL"]["image_size"])
+
+    # Load and flatten each image
+    for i, (im, y) in tqdm(enumerate(dataset)):
+        images[i] = im.flatten()
+
+    
+    # move images to device
+    images = images.to(device)
+
+    # Standardize by subtracting the mean
+    mean_image = images.mean(0)
+    # zero mean-centered (mean is subtracted from each vector).
+    images -= mean_image
+
+    # get spectral decomposition and normalize eigenvalues
+    eigen_values, eigen_vectors = fast_gram_eigh(images, "R")
+    # normalize the eigenvalues (amount of variance)
+    eigen_values /= eigen_values.sum()
+    # get the cumulative sum of the eigenvalues
+    cumulative_variance = eigen_values.cumsum(dim=0)
+    num_bottom_components = torch.count_nonzero(cumulative_variance < cfg["PCA"]["variance_cutoff"])
+    bottom_images_train = ((images[list(range(len(train_dataset)))]) @ eigen_vectors[:, :num_bottom_components]) @ eigen_vectors[:, :num_bottom_components].T + mean_image
+    bottom_images_val = ((images[list(range(len(train_dataset), len(dataset), 1))]) @ eigen_vectors[:, :num_bottom_components]) @ eigen_vectors[:, :num_bottom_components].T + mean_image
+    bottom_images_train = bottom_images_train.reshape(-1, 3, cfg["MAE"]["MODEL"]["image_size"], cfg["MAE"]["MODEL"]["image_size"])
+    bottom_images_val = bottom_images_val.reshape(-1, 3, cfg["MAE"]["MODEL"]["image_size"], cfg["MAE"]["MODEL"]["image_size"])
+    # TODO: add asset to check if train_dataset length and bottom_images_train length are the same
+    # TODO: add asset to check if val_dataset length and bottom_images_val length are the same
+    
+    train_dataset_new = tuple()
+    val_dataset_new = tuple()
+    for number_of_images in range(len(train_dataset)):
+        train_dataset_new += ((train_dataset[number_of_images][0], train_dataset[number_of_images][1], bottom_images_train[number_of_images]),)
+    for number_of_images in range(len(val_dataset)):
+        val_dataset_new += ((val_dataset[number_of_images][0], val_dataset[number_of_images][1], bottom_images_val[number_of_images]),)
