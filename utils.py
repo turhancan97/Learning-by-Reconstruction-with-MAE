@@ -6,10 +6,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torchvision
+from tqdm import tqdm
 import yaml
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
-
 
 def plot_images(tensor: torch.Tensor, name: str = None):
     """
@@ -231,7 +231,42 @@ def visualize_features(features: torch.Tensor, labels: torch.Tensor,
     plt.savefig(f"{folder_name}/tsne_visualize_dataset_{dataset_name}_with_pca_{pca_mode}.png")
     plt.show()
 
-def extract_variance_components():
+def extract_variance_components(cfg, train_dataset, val_dataset, device):
+    """
+    Extracts the variance components from the given datasets.
+    Args:
+        cfg (dict): Configuration dictionary.
+        train_dataset: Training dataset.
+        val_dataset: Validation dataset.
+        device (str): Device to be used for computation.
+    Returns:
+        tuple: A tuple containing the modified training dataset and validation dataset.
+    """
+
+    def fast_gram_eigh(X, major="C"):
+        """
+        compute the eigendecomposition of the Gram matrix:
+        - XX.T using column (C) major notation
+        - X.T@X using row (R) major notation
+        """
+        if major == "C":
+            X_view = X.T
+        else:
+            X_view = X
+
+        if X_view.shape[1] < X_view.shape[0]:
+            print("Warning: using the slow path to compute the eigendecomposition")
+            # this case is the usual formula
+            U, S = torch.linalg.eigh(X_view.T @ X_view)
+        else:
+            print("Using the fast path to compute the eigendecomposition")
+            # in this case we work in the tranpose domain
+            U, S = torch.linalg.eigh(X_view @ X_view.T)
+            S = X_view.T @ S
+            S[:, U > 0] /= torch.sqrt(U[U > 0])
+
+        return U, S
+
     # merge the train and val dataset
     dataset = train_dataset + val_dataset
 
@@ -242,7 +277,6 @@ def extract_variance_components():
     for i, (im, y) in tqdm(enumerate(dataset)):
         images[i] = im.flatten()
 
-    
     # move images to device
     images = images.to(device)
 
@@ -257,17 +291,25 @@ def extract_variance_components():
     eigen_values /= eigen_values.sum()
     # get the cumulative sum of the eigenvalues
     cumulative_variance = eigen_values.cumsum(dim=0)
+    # get the number of components that explain the variance
     num_bottom_components = torch.count_nonzero(cumulative_variance < cfg["PCA"]["variance_cutoff"])
+
+    # get the bottom part (x% variance cutoff)
     bottom_images_train = ((images[list(range(len(train_dataset)))]) @ eigen_vectors[:, :num_bottom_components]) @ eigen_vectors[:, :num_bottom_components].T + mean_image
     bottom_images_val = ((images[list(range(len(train_dataset), len(dataset), 1))]) @ eigen_vectors[:, :num_bottom_components]) @ eigen_vectors[:, :num_bottom_components].T + mean_image
+
+    # reshape the images
     bottom_images_train = bottom_images_train.reshape(-1, 3, cfg["MAE"]["MODEL"]["image_size"], cfg["MAE"]["MODEL"]["image_size"])
     bottom_images_val = bottom_images_val.reshape(-1, 3, cfg["MAE"]["MODEL"]["image_size"], cfg["MAE"]["MODEL"]["image_size"])
-    # TODO: add asset to check if train_dataset length and bottom_images_train length are the same
-    # TODO: add asset to check if val_dataset length and bottom_images_val length are the same
+
+    assert len(train_dataset) == len(bottom_images_train)
+    assert len(val_dataset) == len(bottom_images_val)
     
     train_dataset_new = tuple()
     val_dataset_new = tuple()
     for number_of_images in range(len(train_dataset)):
-        train_dataset_new += ((train_dataset[number_of_images][0], train_dataset[number_of_images][1], bottom_images_train[number_of_images]),)
+        train_dataset_new += ((train_dataset[number_of_images][0], bottom_images_train[number_of_images]),)
     for number_of_images in range(len(val_dataset)):
-        val_dataset_new += ((val_dataset[number_of_images][0], val_dataset[number_of_images][1], bottom_images_val[number_of_images]),)
+        val_dataset_new += ((val_dataset[number_of_images][0], bottom_images_val[number_of_images]),)
+
+    return train_dataset_new, val_dataset_new

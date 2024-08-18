@@ -43,7 +43,8 @@ def train(cfg):
     # Load dataset
     dataset_name = cfg["MAE"]["dataset"]
     root_path = f"data/{dataset_name}"
-    
+    device = utils.get_gpu()
+
     # Common transformation
     transform = v2.Compose([
         v2.Resize((cfg["MAE"]["MODEL"]["image_size"], cfg["MAE"]["MODEL"]["image_size"])),
@@ -54,9 +55,12 @@ def train(cfg):
     
     train_dataset, val_dataset = utils.load_and_preprocess_images(root_path, dataset_name, transform, transform)
 
+    if pca_mode != 'no_mode':
+        print(f"Extracting variance components using PCA with mode {pca_mode}")
+        train_dataset, val_dataset = utils.extract_variance_components(cfg, train_dataset, val_dataset, device)
+
     dataloader = torch.utils.data.DataLoader(train_dataset, load_batch_size, shuffle=True, num_workers=4)
     val_dataloader = torch.utils.data.DataLoader(val_dataset, load_batch_size, shuffle=False, num_workers=4)
-    device = utils.get_gpu()
 
     model = MAE_ViT(
         image_size=cfg["MAE"]["MODEL"]["image_size"],
@@ -95,7 +99,12 @@ def train(cfg):
             step_count += 1
             img = img.to(device)
             predicted_img, mask = model(img)
-            loss = torch.mean((predicted_img - img) ** 2 * mask) / cfg["MAE"]["mask_ratio"]
+            if pca_mode != 'no_mode':
+                print('pca_mode')
+                loss = torch.mean((predicted_img - label) ** 2 * mask) / cfg["MAE"]["mask_ratio"]
+            else:
+                print('no_mode')
+                loss = torch.mean((predicted_img - img) ** 2 * mask) / cfg["MAE"]["mask_ratio"]
             loss.backward()
             if step_count % steps_per_update == 0:
                 optim.step()
@@ -116,18 +125,22 @@ def train(cfg):
         model.eval()
         with torch.no_grad():
             val_img = torch.stack([val_dataset[i][0] for i in range(16)])
+            val_img_label = torch.stack([val_dataset[i][1] for i in range(16)])
             val_img = val_img.to(device)
             predicted_val_img, mask = model(val_img)
             # MAE reconstruction pasted with visible patches
-            predicted_val_img = predicted_val_img * mask + val_img * (1 - mask)
-            img = torch.cat([val_img * (1 - mask), predicted_val_img, val_img], dim=0)
-            img = rearrange(img, '(v h1 w1) c h w -> c (h1 h) (w1 v w)', w1=2, v=3)
+            predicted_val_img = predicted_val_img * mask + val_img_label * (1 - mask)
+            img = torch.cat([val_img * (1 - mask), predicted_val_img, val_img_label, val_img], dim=0)
+            img = rearrange(img, '(v h1 w1) c h w -> c (h1 h) (w1 v w)', w1=2, v=4)
             # validation loss of whole val_dataloader
             val_loss = 0
             for val_img, label in iter(val_dataloader):
                 val_img = val_img.to(device)
                 predicted_val_img, mask = model(val_img)
-                loss = torch.mean((predicted_val_img - val_img) ** 2 * mask) / cfg["MAE"]["mask_ratio"]
+                if pca_mode != 'no_mode':
+                    loss = torch.mean((predicted_val_img - label) ** 2 * mask) / cfg["MAE"]["mask_ratio"]
+                else:
+                    loss = torch.mean((predicted_val_img - val_img) ** 2 * mask) / cfg["MAE"]["mask_ratio"]
                 val_loss += loss.item()
             val_loss /= len(val_dataloader)
             print(f'In epoch {e}, average validation loss is {val_loss}.')
