@@ -80,7 +80,8 @@ def linprobe(cfg):
         v2.RandomHorizontalFlip(),
         v2.ToTensor(),
         v2.ToDtype(torch.float32, scale=True),  # Normalize expects float input
-        v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]), # typically from ImageNet
+        # v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]), # typically from ImageNet
+        v2.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
     ])
 
     transform_val = v2.Compose([
@@ -88,7 +89,8 @@ def linprobe(cfg):
         # v2.CenterCrop(cfg["MAE"]["MODEL"]["image_size"]),
         v2.ToTensor(),
         v2.ToDtype(torch.float32, scale=True),  # Normalize expects float input
-        v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]), # typically from ImageNet
+        # v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]), # typically from ImageNet
+        v2.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
     ])
     
     train_dataset, val_dataset = utils.load_and_preprocess_images(root_path, dataset_name, transform_train, transform_val)
