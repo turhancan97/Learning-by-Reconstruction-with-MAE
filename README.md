@@ -148,6 +148,8 @@ You can download the weights of the classification models from the following lin
 
 ## Results
 
+## Huggingface Model and Space
+
 ## References
 
 * [Learning by Reconstruction Produces Uninformative Features For Perception](https://arxiv.org/abs/2402.11337)
