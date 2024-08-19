@@ -13,3 +13,4 @@ pyyaml
 opencv-python
 wandb
 icecream
+torchinfo
