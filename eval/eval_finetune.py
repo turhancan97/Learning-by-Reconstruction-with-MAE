@@ -73,21 +73,22 @@ def finetune(cfg):
     dataset_name = cfg["MAE"]["dataset"]
     root_path = f"../data/{dataset_name}"
     
-    # Common transformation
+    # Transformation - These transformations are good for CIFAR-10, STL-10. 
+    # For ImageNet, you may need to change the transformations. (You can use the commented transformations)
     transform_train = v2.Compose([
-        v2.Resize((cfg["MAE"]["MODEL"]["image_size"], cfg["MAE"]["MODEL"]["image_size"])),
         v2.RandAugment(2, 9),  # 2 operations with magnitude 9
+        v2.Resize((cfg["MAE"]["MODEL"]["image_size"], cfg["MAE"]["MODEL"]["image_size"])),
+        # v2.RandomResizedCrop(cfg["MAE"]["MODEL"]["image_size"], interpolation=3),  # 3 is bicubic
+        # v2.RandomHorizontalFlip(),
         v2.ToTensor(),
-        # v2.RandomRotation(30),
         v2.ToDtype(torch.float32, scale=True),  # Normalize expects float input
         # v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]), # typically from ImageNet
         v2.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
-        # v2.RandomHorizontalFlip(),
-        # v2.ColorJitter()
     ])
 
     transform_val = v2.Compose([
         v2.Resize((cfg["MAE"]["MODEL"]["image_size"], cfg["MAE"]["MODEL"]["image_size"])),
+        # v2.CenterCrop(cfg["MAE"]["MODEL"]["image_size"]),
         v2.ToTensor(),
         v2.ToDtype(torch.float32, scale=True),
         # v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]), # typically from ImageNet
@@ -126,6 +127,9 @@ def finetune(cfg):
         print("Randomly initialized model loaded")
     
     model = ViT_Classifier(model.encoder, dropout_p = 0.1, num_classes=len(train_dataset.classes)).to(device)
+
+    # model summary
+    utils.summary(cfg, model, device, load_batch_size)
 
     compile_ = False
     if device == torch.device("cuda") and compile_:

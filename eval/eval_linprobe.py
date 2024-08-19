@@ -73,7 +73,8 @@ def linprobe(cfg):
     dataset_name = cfg["MAE"]["dataset"]
     root_path = f"../data/{dataset_name}"
     
-    # Common transformation
+    # Transformation - These transformations are good for CIFAR-10, STL-10. 
+    # For ImageNet, you may need to change the transformations. (You can use the commented transformations)
     transform_train = v2.Compose([
         v2.Resize((cfg["MAE"]["MODEL"]["image_size"], cfg["MAE"]["MODEL"]["image_size"])),
         # v2.RandomResizedCrop(cfg["MAE"]["MODEL"]["image_size"]),
@@ -130,6 +131,9 @@ def linprobe(cfg):
     for name_, p in model.named_parameters():
         if "head" not in name_:
             p.requires_grad = False
+    
+    # model summary
+    utils.summary(cfg, model, device, load_batch_size)
 
     compile_ = False
     if device == torch.device("cuda") and compile_:
