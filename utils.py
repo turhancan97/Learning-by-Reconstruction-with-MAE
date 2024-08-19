@@ -5,11 +5,13 @@ from functools import wraps
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
+import torchinfo
 import torchvision
-from tqdm import tqdm
 import yaml
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
+from tqdm import tqdm
+
 
 def plot_images(tensor: torch.Tensor, name: str = None):
     """
@@ -313,3 +315,31 @@ def extract_variance_components(cfg, train_dataset, val_dataset, device):
         val_dataset_new += ((val_dataset[number_of_images][0], bottom_images_val[number_of_images]),)
 
     return train_dataset_new, val_dataset_new
+
+def summary(cfg, model, device, batch_size) -> None:
+    """
+    Generate a summary of the model using torchinfo.
+
+    Args:
+        cfg (dict): Configuration dictionary.
+        model (nn.Module or tuple): The model to generate the summary for. If the model is wrapped in a tuple, only the first element will be used.
+        device (str): The device to run the model on.
+        batch_size (int): The batch size for the input.
+
+    Returns:
+        None
+    """
+    # some models are wrapped in a tuple
+    if type(model) == tuple:
+        model = model[0]
+    device = device
+    batch_size = batch_size
+    channels = 3
+    img_height = cfg["MAE"]["MODEL"]["image_size"]
+    img_width = cfg["MAE"]["MODEL"]["image_size"]
+    torchinfo.summary(
+        model, 
+        device=device, 
+        input_size=[batch_size, channels, img_height, img_width],
+        row_settings=["var_names"]
+    )
