@@ -26,6 +26,7 @@ def train(cfg):
     dataset_name = cfg["MAE"]["dataset"]
     pca_mode = cfg["MAE"]["pca_mode"]
     model_name = cfg["MAE"]["model_name"]
+    concentrate_high_variance_pixels = cfg["MAE"]["concentrate_high_variance_pixels"]
     run_name = '_'+ dataset_name + '_' + pca_mode + '_' + time.strftime("%Y.%m.%d-%H.%M.00")
     folder_name = f"model/{dataset_name}/{pca_mode}"
 
@@ -106,10 +107,26 @@ def train(cfg):
             img = img.to(device)
             predicted_img, mask = model(img)
             if pca_mode != 'no_mode':
-                # loss = torch.mean((predicted_img - label) ** 2 * mask) / cfg["MAE"]["mask_ratio"]
-                loss = (predicted_img - label) ** 2
-                loss = loss.mean(dim=-1)  # mean loss per patch
-                loss = (loss * mask).sum() / mask.sum()  # mean loss on removed patches
+                if concentrate_high_variance_pixels:
+                    # Identify high-variance pixels: create a mask that is 1 where pixels are high-variance, 0 where they are gray.
+                    threshold = 0.05  # You may need to adjust this threshold based on your images
+                    variance_mask = (torch.abs(label[:, 0, :, :] - label[:, 1, :, :]) > threshold) | \
+                                    (torch.abs(label[:, 1, :, :] - label[:, 2, :, :]) > threshold) | \
+                                    (torch.abs(label[:, 2, :, :] - label[:, 0, :, :]) > threshold)
+
+                    # Expand the mask to have the same number of dimensions as the image
+                    variance_mask = variance_mask.unsqueeze(1).expand_as(label)
+
+                    # Calculate the loss only for high-variance pixels
+                    loss = (predicted_img - label) ** 2
+                    loss = loss * variance_mask  # Apply the mask
+                    loss = loss.mean(dim=-1)  # mean loss per patch
+                    loss = (loss * mask).sum() / mask.sum()  # mean loss on removed patches
+                else:
+                    # loss = torch.mean((predicted_img - label) ** 2 * mask) / cfg["MAE"]["mask_ratio"]
+                    loss = (predicted_img - label) ** 2
+                    loss = loss.mean(dim=-1)  # mean loss per patch
+                    loss = (loss * mask).sum() / mask.sum()  # mean loss on removed patches
             else:
                 loss = torch.mean((predicted_img - img) ** 2 * mask) / cfg["MAE"]["mask_ratio"]
             loss.backward()
@@ -155,10 +172,26 @@ def train(cfg):
                 val_img = val_img.to(device)
                 predicted_val_img, mask = model(val_img)
                 if pca_mode != 'no_mode':
-                    # loss = torch.mean((predicted_val_img - label) ** 2 * mask) / cfg["MAE"]["mask_ratio"]
-                    loss = (predicted_val_img - label) ** 2
-                    loss = loss.mean(dim=-1)
-                    loss = (loss * mask).sum() / mask.sum()
+                    if concentrate_high_variance_pixels:
+                        # Identify high-variance pixels: create a mask that is 1 where pixels are high-variance, 0 where they are gray.
+                        threshold = 0.05  # You may need to adjust this threshold based on your images
+                        variance_mask = (torch.abs(label[:, 0, :, :] - label[:, 1, :, :]) > threshold) | \
+                                        (torch.abs(label[:, 1, :, :] - label[:, 2, :, :]) > threshold) | \
+                                        (torch.abs(label[:, 2, :, :] - label[:, 0, :, :]) > threshold)
+
+                        # Expand the mask to have the same number of dimensions as the image
+                        variance_mask = variance_mask.unsqueeze(1).expand_as(label)
+
+                        # Calculate the loss only for high-variance pixels
+                        loss = (predicted_val_img - label) ** 2
+                        loss = loss * variance_mask  # Apply the mask
+                        loss = loss.mean(dim=-1)  # mean loss per patch
+                        loss = (loss * mask).sum() / mask.sum()  # mean loss on removed patches
+                    else:
+                        # loss = torch.mean((predicted_val_img - label) ** 2 * mask) / cfg["MAE"]["mask_ratio"]
+                        loss = (predicted_val_img - label) ** 2
+                        loss = loss.mean(dim=-1)
+                        loss = (loss * mask).sum() / mask.sum()
                 else:
                     loss = torch.mean((predicted_val_img - val_img) ** 2 * mask) / cfg["MAE"]["mask_ratio"]
                 val_loss += loss.item()
