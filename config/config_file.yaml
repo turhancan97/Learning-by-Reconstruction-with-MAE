@@ -11,19 +11,20 @@ PCA:
   crop: 224
   variance_cutoff: 0.25
 MAE:
-  dataset: cifar10 # imagenet, cifar10, cifar100, stl10 or custom
+  dataset: stl10 # imagenet, cifar10, cifar100, stl10 or custom
   pca_mode: no_mode # no_mode, bottom_20, bottom_25, bottom_30, bottom_35, bottom_40
+  concentrate_high_variance_pixels: True
   batch_size: 4096
-  max_device_batch_size: 512
+  max_device_batch_size: 1024
   base_learning_rate: 1.5e-4
   weight_decay: 0.05
   mask_ratio: 0.75
-  total_epoch: 400
-  warmup_epoch: 40
+  total_epoch: 2000
+  warmup_epoch: 200
   model_name: vit-t-mae-pretrain.pt
   MODEL:
-    image_size: 32
-    patch_size: 2
+    image_size: 96 # 32
+    patch_size: 6 # 2
     emb_dim: 192
     encoder_layer: 12
     encoder_head: 3
