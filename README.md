@@ -79,25 +79,25 @@ You can download the weights of the pretrained masked autoencoder models from th
     <td>400</td>
     <th>ViT-Tiny</th>
     <th>CIFAR10</th>
-    <td><a href="x">MAE Model</a></td>
+    <td><a href="https://huggingface.co/turhancan97/MAE-Models/blob/main/cifar10/no_mode/vit-t-mae-pretrain.pt">MAE Model with no PCA Mode</a></td>
   </tr>
   <tr>
     <td>400</td>
     <th>ViT-Tiny</th>
-    <th>CIFAR100</th>
-    <td><a href="x">MAE Model</a></td>
+    <th>CIFAR10</th>
+    <td><a href="https://huggingface.co/turhancan97/MAE-Models/blob/main/cifar10/bottom_25/vit-t-mae-pretrain.pt">MAE Model with bottom_25 PCA Mode</a></td>
   </tr>
   <tr>
-    <td>200</td>
-    <th>ViT-Tiny</th>
-    <th>Imagenette</th>
-    <td><a href="x">MAE Model</a></td>
-   </tr>
-  <tr>
-    <td>200</td>
+    <td>2000</td>
     <th>ViT-Tiny</th>
     <th>STL10</th>
-    <td><a href="x">MAE Model</a></td>
+    <td><a href="https://huggingface.co/turhancan97/MAE-Models/blob/main/stl10/no_mode/vit-t-mae-pretrain.pt">MAE Model with no PCA Mode</a></td>
+   </tr>
+  <tr>
+    <td>2000</td>
+    <th>ViT-Tiny</th>
+    <th>STL10</th>
+    <td><a href="https://huggingface.co/turhancan97/MAE-Models/blob/main/stl10/bottom_25/vit-t-mae-pretrain.pt">MAE Model with bottom_25 PCA Mode</a></td>
    </tr>
 </table>
 
@@ -122,25 +122,49 @@ You can download the weights of the classification models from the following lin
     <td>No Mode</td>
     <th>Fine-Tuning</th>
     <th>CIFAR10</th>
-    <td><a href="x">MAE Encoder</a></td>
+    <td><a href="https://huggingface.co/turhancan97/MAE-Models/blob/main/cifar10/no_mode/vit-t-mae-finetune.pt">MAE Encoder</a></td>
   </tr>
   <tr>
     <td>No Mode</td>
     <th>Linear Probing</th>
     <th>CIFAR10</th>
-    <td><a href="x">MAE Encoder</a></td>
+    <td><a href="https://huggingface.co/turhancan97/MAE-Models/blob/main/cifar10/no_mode/vit-t-mae-linprobe.pt">MAE Encoder</a></td>
   </tr>
   <tr>
     <td>bottom 25</td>
     <th>Fine-Tuning</th>
     <th>CIFAR10</th>
-    <td><a href="x">MAE Encoder</a></td>
+    <td><a href="https://huggingface.co/turhancan97/MAE-Models/blob/main/cifar10/bottom_25/vit-t-mae-finetune.pt">MAE Encoder</a></td>
    </tr>
   <tr>
     <td>bottom 25</td>
     <th>Linear Probing</th>
     <th>CIFAR10</th>
-    <td><a href="x">MAE Encoder</a></td>
+    <td><a href="https://huggingface.co/turhancan97/MAE-Models/blob/main/cifar10/bottom_25/vit-t-mae-linprobe.pt">MAE Encoder</a></td>
+   </tr>
+  <tr>
+    <td>No Mode</td>
+    <th>Fine-Tuning</th>
+    <th>STL10</th>
+    <td><a href="https://huggingface.co/turhancan97/MAE-Models/blob/main/stl10/no_mode/vit-t-mae-finetune.pt">MAE Encoder</a></td>
+  </tr>
+  <tr>
+    <td>No Mode</td>
+    <th>Linear Probing</th>
+    <th>STL10</th>
+    <td><a href="https://huggingface.co/turhancan97/MAE-Models/blob/main/stl10/no_mode/vit-t-mae-linprobe.pt">MAE Encoder</a></td>
+  </tr>
+  <tr>
+    <td>bottom 25</td>
+    <th>Fine-Tuning</th>
+    <th>STL10</th>
+    <td><a href="https://huggingface.co/turhancan97/MAE-Models/blob/main/stl10/bottom_25/vit-t-mae-finetune.pt">MAE Encoder</a></td>
+   </tr>
+  <tr>
+    <td>bottom 25</td>
+    <th>Linear Probing</th>
+    <th>STL10</th>
+    <td><a href="https://huggingface.co/turhancan97/MAE-Models/blob/main/stl10/bottom_25/vit-t-mae-linprobe.pt">MAE Encoder</a></td>
    </tr>
 </table>
 
@@ -149,6 +173,11 @@ You can download the weights of the classification models from the following lin
 ## Results
 
 ## Huggingface Model and Space
+
+The link below provides access to the model and its corresponding space on Hugging Face. The models were trained on the CIFAR10 and STL10 datasets using the ViT-Tiny architecture.
+
+* [MAE Models](https://huggingface.co/turhancan97/MAE-Models/tree/main)
+* [MAE-Demo Space](https://huggingface.co/spaces/turhancan97/MAE-Demo)
 
 ## References
 
