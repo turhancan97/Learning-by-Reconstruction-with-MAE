@@ -97,6 +97,7 @@ def train(cfg):
         writer = SummaryWriter(os.path.join('logs', cfg["MAE"]["dataset"], 'mae-pretrain'))
 
     step_count = 0
+    threshold = 0.1  # threshold for high-variance pixels
     optim.zero_grad()
     t0 = time.time()
     for e in range(cfg["MAE"]["total_epoch"]):
@@ -109,7 +110,6 @@ def train(cfg):
             if pca_mode != 'no_mode':
                 if concentrate_high_variance_pixels:
                     # Identify high-variance pixels: create a mask that is 1 where pixels are high-variance, 0 where they are gray.
-                    threshold = 0.05  # You may need to adjust this threshold based on your images
                     variance_mask = (torch.abs(label[:, 0, :, :] - label[:, 1, :, :]) > threshold) | \
                                     (torch.abs(label[:, 1, :, :] - label[:, 2, :, :]) > threshold) | \
                                     (torch.abs(label[:, 2, :, :] - label[:, 0, :, :]) > threshold)
@@ -120,12 +120,12 @@ def train(cfg):
                     # Calculate the loss only for high-variance pixels
                     loss = (predicted_img - label) ** 2
                     loss = loss * variance_mask  # Apply the mask
-                    loss = loss.mean(dim=-1)  # mean loss per patch
+                    loss = torch.mean(loss)  # mean loss
                     loss = (loss * mask).sum() / mask.sum()  # mean loss on removed patches
                 else:
                     # loss = torch.mean((predicted_img - label) ** 2 * mask) / cfg["MAE"]["mask_ratio"]
                     loss = (predicted_img - label) ** 2
-                    loss = loss.mean(dim=-1)  # mean loss per patch
+                    loss = torch.mean(loss)  # mean loss
                     loss = (loss * mask).sum() / mask.sum()  # mean loss on removed patches
             else:
                 loss = torch.mean((predicted_img - img) ** 2 * mask) / cfg["MAE"]["mask_ratio"]
@@ -174,7 +174,6 @@ def train(cfg):
                 if pca_mode != 'no_mode':
                     if concentrate_high_variance_pixels:
                         # Identify high-variance pixels: create a mask that is 1 where pixels are high-variance, 0 where they are gray.
-                        threshold = 0.05  # You may need to adjust this threshold based on your images
                         variance_mask = (torch.abs(label[:, 0, :, :] - label[:, 1, :, :]) > threshold) | \
                                         (torch.abs(label[:, 1, :, :] - label[:, 2, :, :]) > threshold) | \
                                         (torch.abs(label[:, 2, :, :] - label[:, 0, :, :]) > threshold)
@@ -185,12 +184,12 @@ def train(cfg):
                         # Calculate the loss only for high-variance pixels
                         loss = (predicted_val_img - label) ** 2
                         loss = loss * variance_mask  # Apply the mask
-                        loss = loss.mean(dim=-1)  # mean loss per patch
-                        loss = (loss * mask).sum() / mask.sum()  # mean loss on removed patches
+                        loss = torch.mean(loss)
+                        loss = (loss * mask).sum() / mask.sum()
                     else:
                         # loss = torch.mean((predicted_val_img - label) ** 2 * mask) / cfg["MAE"]["mask_ratio"]
                         loss = (predicted_val_img - label) ** 2
-                        loss = loss.mean(dim=-1)
+                        loss = torch.mean(loss)
                         loss = (loss * mask).sum() / mask.sum()
                 else:
                     loss = torch.mean((predicted_val_img - val_img) ** 2 * mask) / cfg["MAE"]["mask_ratio"]
