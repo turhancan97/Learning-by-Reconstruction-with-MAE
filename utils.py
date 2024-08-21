@@ -295,24 +295,42 @@ def extract_variance_components(cfg, train_dataset, val_dataset, device):
     cumulative_variance = eigen_values.cumsum(dim=0)
     # get the number of components that explain the variance
     num_bottom_components = torch.count_nonzero(cumulative_variance < cfg["PCA"]["variance_cutoff"])
+    num_top_components = torch.count_nonzero(cumulative_variance > cfg["PCA"]["variance_cutoff"])
 
     # get the bottom part (x% variance cutoff)
     bottom_images_train = ((images[list(range(len(train_dataset)))]) @ eigen_vectors[:, :num_bottom_components]) @ eigen_vectors[:, :num_bottom_components].T + mean_image
     bottom_images_val = ((images[list(range(len(train_dataset), len(dataset), 1))]) @ eigen_vectors[:, :num_bottom_components]) @ eigen_vectors[:, :num_bottom_components].T + mean_image
 
+    top_images_train = ((images[list(range(len(train_dataset)))]) @ eigen_vectors[:, -num_top_components:]) @ eigen_vectors[:, -num_top_components:].T + mean_image
+    top_images_val = ((images[list(range(len(train_dataset), len(dataset), 1))]) @ eigen_vectors[:, -num_top_components:]) @ eigen_vectors[:, -num_top_components:].T + mean_image
+
     # reshape the images
     bottom_images_train = bottom_images_train.reshape(-1, 3, cfg["MAE"]["MODEL"]["image_size"], cfg["MAE"]["MODEL"]["image_size"])
     bottom_images_val = bottom_images_val.reshape(-1, 3, cfg["MAE"]["MODEL"]["image_size"], cfg["MAE"]["MODEL"]["image_size"])
 
+    top_images_train = top_images_train.reshape(-1, 3, cfg["MAE"]["MODEL"]["image_size"], cfg["MAE"]["MODEL"]["image_size"])
+    top_images_val = top_images_val.reshape(-1, 3, cfg["MAE"]["MODEL"]["image_size"], cfg["MAE"]["MODEL"]["image_size"])
+
     assert len(train_dataset) == len(bottom_images_train)
     assert len(val_dataset) == len(bottom_images_val)
-    
+    assert len(train_dataset) == len(top_images_train)
+    assert len(val_dataset) == len(top_images_val)
+
+    if "bottom" in cfg["MAE"]["pca_mode"]:
+        images_train = bottom_images_train
+        images_val = bottom_images_val
+    elif "top" in cfg["MAE"]["pca_mode"]:
+        images_train = top_images_train
+        images_val = top_images_val
+    else:
+        raise ValueError(f"Unknown PCA mode: {cfg['MAE']['pca_mode']}")
+
     train_dataset_new = tuple()
     val_dataset_new = tuple()
     for number_of_images in range(len(train_dataset)):
-        train_dataset_new += ((train_dataset[number_of_images][0], bottom_images_train[number_of_images]),)
+        train_dataset_new += ((train_dataset[number_of_images][0], images_train[number_of_images]),)
     for number_of_images in range(len(val_dataset)):
-        val_dataset_new += ((val_dataset[number_of_images][0], bottom_images_val[number_of_images]),)
+        val_dataset_new += ((val_dataset[number_of_images][0], images_val[number_of_images]),)
 
     return train_dataset_new, val_dataset_new
 
