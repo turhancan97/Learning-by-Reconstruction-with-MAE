@@ -121,13 +121,16 @@ def train(cfg):
                     loss = (predicted_img - label) ** 2
                     loss = loss * variance_mask  # Apply the mask
                     loss = torch.mean(loss)  # mean loss
+                    # No loss is computed on visible patches
                     loss = (loss * mask).sum() / mask.sum()  # mean loss on removed patches
                 else:
                     # loss = torch.mean((predicted_img - label) ** 2 * mask) / cfg["MAE"]["mask_ratio"]
                     loss = (predicted_img - label) ** 2
                     loss = torch.mean(loss)  # mean loss
+                    # No loss is computed on visible patches
                     loss = (loss * mask).sum() / mask.sum()  # mean loss on removed patches
             else:
+                # No loss is computed on visible patches
                 loss = torch.mean((predicted_img - img) ** 2 * mask) / cfg["MAE"]["mask_ratio"]
             loss.backward()
             if step_count % steps_per_update == 0:
