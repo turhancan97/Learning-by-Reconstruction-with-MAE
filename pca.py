@@ -16,16 +16,11 @@ device = utils.get_gpu()
 print(f"Using device: {device}")
 
 
-def fast_gram_eigh(X, major="C"):
+def fast_gram_eigh(X):
     """
     compute the eigendecomposition of the Gram matrix:
-    - XX.T using column (C) major notation
-    - X.T@X using row (R) major notation
     """
-    if major == "C":
-        X_view = X.T
-    else:
-        X_view = X
+    X_view = X
 
     if X_view.shape[1] < X_view.shape[0]:
         print("Warning: using the slow path to compute the eigendecomposition")
@@ -126,7 +121,7 @@ def main(cfg: dict) -> torch.Tensor:
         else:
             print("Using fast PCA - with torch")
             # get spectral decomposition and normalize eigenvalues
-            eigen_values, eigen_vectors = fast_gram_eigh(images, "R")
+            eigen_values, eigen_vectors = fast_gram_eigh(images)
             ic(eigen_values.shape, eigen_vectors.shape)
             # normalize the eigenvalues (amount of variance)
             eigen_values /= eigen_values.sum()
