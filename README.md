@@ -41,7 +41,7 @@ As you can see from the image above:
 </figure>
 
 ### Implications for Model Design:
-* MAE, which selectively removes parts of the input data, forces the model to focus on the remaining parts, potentially improving the learning of features that are useful for perception.
+* MAE, which selectively removes parts of the input data, forces the model to focus on the remaining parts, potentially improving the learning of features that are useful for downstream tasks.
 * The paper suggests that models like MAE, which encourage the learning of informative features, may be more effective for downstream tasks than other denoising autoencoders.
 
 ## About the Repository
@@ -58,6 +58,10 @@ As paper above suggests, the top principal components (those that explain the mo
 conda create -n mae python=3.8
 conda activate mae
 pip install -r requirements.txt
+```
+### Remove Certain Percentage of top or bottom variance components from an image dataset and Plot the Images
+```bash
+python pca.py -c config/config_file.yaml
 ```
 
 ### Training the Model
@@ -169,6 +173,47 @@ You can download the weights of the classification models from the following lin
 </table>
 
 ## About configuration file
+
+Configuration file is used to set the hyperparameters of the model and the dataset. The configuration file is in the YAML format. 
+
+For example, to remove the bottom 25% of the variance components from the custom dataset, PCA part the configuration file should be as follows:
+
+```yaml
+PCA:
+  dataset: custom # imagenet, cifar10, cifar100, stl10 or custom
+  split: val # train, val or test
+  use_sklearn: False
+  resize: 256
+  crop: 224
+  variance_cutoff: 0.25
+```
+
+On the other hand, the configurations for the MAE model is as follows:
+
+```yaml
+MAE:
+  dataset: stl10 # imagenet, cifar10, cifar100, stl10 or custom
+  pca_mode: no_mode # no_mode, bottom_20, bottom_25, bottom_30, bottom_35, bottom_40, top_70, top_75, top_80
+  concentrate_high_variance_pixels: False
+  batch_size: 4096
+  max_device_batch_size: 512
+  base_learning_rate: 1.5e-4
+  weight_decay: 0.05
+  mask_ratio: 0.75
+  total_epoch: 2000
+  warmup_epoch: 200
+  model_name: vit-t-mae-pretrain.pt
+  MODEL:
+    image_size: 96 # 32 for cifar, 96 for stl10
+    patch_size: 6 # 2 for cifar, 6 for stl10
+    emb_dim: 192
+    encoder_layer: 12
+    encoder_head: 3
+    decoder_layer: 4
+    decoder_head: 3
+```
+
+You can change the hyperparameters of the model and the dataset by changing the configuration file.
 
 ## Results
 
