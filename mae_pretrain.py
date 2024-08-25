@@ -117,18 +117,19 @@ def train(cfg):
                     # Expand the mask to have the same number of dimensions as the image
                     variance_mask = variance_mask.unsqueeze(1).expand_as(label)
 
-                    # Calculate the loss only for high-variance pixels
-                    loss = (predicted_img - label) ** 2
-                    loss = loss * variance_mask  # Apply the mask
-                    loss = torch.mean(loss)  # mean loss
-                    # No loss is computed on visible patches
-                    loss = (loss * mask).sum() / mask.sum()  # mean loss on removed patches
+                    # # Calculate the loss only for high-variance pixels
+                    # loss = (predicted_img - label) ** 2
+                    # loss = loss * variance_mask  # Apply the mask
+                    # loss = torch.mean(loss)  # mean loss
+                    # # No loss is computed on visible patches
+                    # loss = (loss * mask).sum() / mask.sum()  # mean loss on removed patches
+                    loss = torch.mean((predicted_img - label) ** 2 * variance_mask * mask) / cfg["MAE"]["mask_ratio"]
                 else:
-                    # loss = torch.mean((predicted_img - label) ** 2 * mask) / cfg["MAE"]["mask_ratio"]
-                    loss = (predicted_img - label) ** 2
-                    loss = torch.mean(loss)  # mean loss
-                    # No loss is computed on visible patches
-                    loss = (loss * mask).sum() / mask.sum()  # mean loss on removed patches
+                    loss = torch.mean((predicted_img - label) ** 2 * mask) / cfg["MAE"]["mask_ratio"]
+                    # loss = (predicted_img - label) ** 2
+                    # loss = torch.mean(loss)  # mean loss
+                    # # No loss is computed on visible patches
+                    # loss = (loss * mask).sum() / mask.sum()  # mean loss on removed patches
             else:
                 # No loss is computed on visible patches
                 loss = torch.mean((predicted_img - img) ** 2 * mask) / cfg["MAE"]["mask_ratio"]
@@ -184,16 +185,17 @@ def train(cfg):
                         # Expand the mask to have the same number of dimensions as the image
                         variance_mask = variance_mask.unsqueeze(1).expand_as(label)
 
-                        # Calculate the loss only for high-variance pixels
-                        loss = (predicted_val_img - label) ** 2
-                        loss = loss * variance_mask  # Apply the mask
-                        loss = torch.mean(loss)
-                        loss = (loss * mask).sum() / mask.sum()
+                        # # Calculate the loss only for high-variance pixels
+                        # loss = (predicted_val_img - label) ** 2
+                        # loss = loss * variance_mask  # Apply the mask
+                        # loss = torch.mean(loss)
+                        # loss = (loss * mask).sum() / mask.sum()
+                        loss = torch.mean((predicted_val_img - label) ** 2 * variance_mask * mask) / cfg["MAE"]["mask_ratio"]
                     else:
-                        # loss = torch.mean((predicted_val_img - label) ** 2 * mask) / cfg["MAE"]["mask_ratio"]
-                        loss = (predicted_val_img - label) ** 2
-                        loss = torch.mean(loss)
-                        loss = (loss * mask).sum() / mask.sum()
+                        loss = torch.mean((predicted_val_img - label) ** 2 * mask) / cfg["MAE"]["mask_ratio"]
+                        # loss = (predicted_val_img - label) ** 2
+                        # loss = torch.mean(loss)
+                        # loss = (loss * mask).sum() / mask.sum()
                 else:
                     loss = torch.mean((predicted_val_img - val_img) ** 2 * mask) / cfg["MAE"]["mask_ratio"]
                 val_loss += loss.item()
