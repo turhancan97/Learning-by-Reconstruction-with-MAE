@@ -222,6 +222,11 @@ You can change the hyperparameters of the model and the dataset by changing the 
   <figcaption>Quantitative results of our experiments</figcaption>
 </figure>
 
+<figure align="center"> 
+  <img src="images/model_results/mae_stl10_visualize_bottom_25_perc.png" alt="drawing" width="400"/>
+  <figcaption>Example MAE Training Results: Reconstructing the Bottom 25% of PCA Components for a Set of Validation Images</figcaption>
+</figure>
+
 ## Huggingface Model and Space
 
 The link below provides access to the model and its corresponding space on Hugging Face. The models were trained on the CIFAR10 and STL10 datasets using the ViT-Tiny architecture.
