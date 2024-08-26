@@ -224,6 +224,15 @@ The link below provides access to the model and its corresponding space on Huggi
 * [MAE Models](https://huggingface.co/turhancan97/MAE-Models/tree/main)
 * [MAE-Demo Space](https://huggingface.co/spaces/turhancan97/MAE-Demo)
 
+## Demo
+
+You can check the some of the demo scripts in the `demo` folder as jupyter notebooks.
+
+<figure align="center"> 
+  <img src="images/model_results/mae_single_image_visualize_dog.png" alt="drawing" width="600"/>
+  <figcaption>Example Single Image Inference</figcaption>
+</figure>
+
 ## References
 
 * [Learning by Reconstruction Produces Uninformative Features For Perception](https://arxiv.org/abs/2402.11337)
