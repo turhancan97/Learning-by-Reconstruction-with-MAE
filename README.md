@@ -217,6 +217,11 @@ You can change the hyperparameters of the model and the dataset by changing the 
 
 ## Results
 
+<figure align="center"> 
+  <img src="images/model_results/results.png" alt="drawing" width="400"/>
+  <figcaption>Quantitative results of our experiments</figcaption>
+</figure>
+
 ## Huggingface Model and Space
 
 The link below provides access to the model and its corresponding space on Hugging Face. The models were trained on the CIFAR10 and STL10 datasets using the ViT-Tiny architecture.
