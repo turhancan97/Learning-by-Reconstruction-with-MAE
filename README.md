@@ -243,6 +243,12 @@ You can check the some of the demo scripts in the `demo` folder as jupyter noteb
   <figcaption>Example Single Image Inference</figcaption>
 </figure>
 
+## Presentation
+
+You can check the presentation of the project from the following link:
+
+* [Presentation](images/mae-project-presentation.pdf)
+
 ## References
 
 * [Learning by Reconstruction Produces Uninformative Features For Perception](https://arxiv.org/abs/2402.11337)
